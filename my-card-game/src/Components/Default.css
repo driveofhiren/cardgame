@@ -1,0 +1,96 @@
+.board-container {
+    display: flex;
+    margin-top: 20px; 
+    
+
+  }
+  .hand{
+  display: flex;
+  justify-content: center; /* Center the cards horizontally */
+  gap: 5px; }
+
+  .board {
+  background-color: #644557;
+  /*Backgroundcolorfortheboard*/border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  
+  /*Setdisplaytoflex*/flex-wrap: nowrap;
+  /*Preventwrappingtokeepcardsinasingleline*/overflow-x: auto;
+  flex-direction: column;
+  width: 100px;
+  height: auto;
+  
+}
+  .grid-container {
+    display: grid;
+    grid-template-columns: 8fr 2fr; /* 80/20 split */
+    grid-gap: 20px; /* Adjust the gap between the columns */
+  }
+  .player-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Align items in the center horizontally */
+}
+
+.hand {
+  display: flex;
+  justify-content: center; /* Center the cards horizontally */
+  gap: 5px; /* Add some space between the cards */
+}
+
+  
+  .players-hand-column {
+    /* Additional styling for the left column */
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* This column will occupy the first grid track */
+  }
+  
+  .other-things-column {
+    display: flex;
+  flex-direction: column;
+  align-items: center;
+    grid-column: 2;
+    margin-top: 30px; /* This column will occupy the second grid track */
+  }
+  
+  
+  .board-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  
+  }
+ 
+  
+  body {
+    font-family: Arial, sans-serif;
+    color: aliceblue;
+    background-color: #1a242f; /* Light blue-grey background */
+  }
+
+  .deal-button {
+    background-color: #4CAF50; /* Green */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  #players-hand {
+    width: 90%;
+  }
+  
+  #board {
+    /* Add styles for the game board */
+  }
+  
+  #labels {
+    /* Add styles for the labels */
+  }
+  
