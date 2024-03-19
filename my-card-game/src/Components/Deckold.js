@@ -7,11 +7,15 @@ import { w3cwebsocket as W3CWebSocket } from 'websocket';
 const client = new W3CWebSocket('ws://10.0.0.205:8080');
 
 
-export const Deck = () => { 
+export const Deck = () => {
+
   const [gameState, setGameState] = useState({
     players: [],
     action: null
   });
+  
+
+
   const suits = ['♥', '♦', '♠', '♣'];
   const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Adjusted for 235 game
   const [players, setPlayers] = useState([
@@ -26,14 +30,9 @@ export const Deck = () => {
   const [cardsDealt, setCardsDealt] = useState(false); 
 
   const sendMessage = (action) => {
-    if (client.readyState === WebSocket.OPEN) {
-      const message = JSON.stringify(action);
-      client.send(message);
-    } else {
-      console.error("WebSocket connection is not open.");
-    }
+    const message = JSON.stringify(action);
+    client.send(message);
   };
-  
 
 
   useEffect(() => {
@@ -186,32 +185,25 @@ export const Deck = () => {
       </div>
     ));
   };
+  
   return (
     <div className="container-fluid">
       <div className="grid-container">
-        {/* Left column */}
         <div className="players-hand-column">
           <div id="players-hand">{renderPlayers()}</div>
         </div>
   
-        {/* Right column */}
         <div className="other-things-column">
           <div className="row">
-          <div id="labels">
-            <button className="deal-button" onClick={dealCards}>Deal Cards</button>
-            <div>Round: {round}</div>
-            <div><h2>Scoreboard</h2></div>
-            <div>
-            {players.map((player, index) => (
-            <p key={index}>{player.name} - Points: {player.points}</p>))}
+            <div id="labels">
+              <button className="deal-button" onClick={dealCards}>Deal Cards</button>
             </div>
-            </div>
-            </div>
-            <div className="row">
+          </div>
+          <div className="row">
             <div>{renderBoard()}  </div>
           </div>
         </div>
       </div>
     </div>
   );
-  }   
+};
