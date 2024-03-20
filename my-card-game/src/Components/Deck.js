@@ -10,15 +10,16 @@ const client = new W3CWebSocket('ws://10.0.0.205:8080');
 export const Deck = () => { 
   const [gameState, setGameState] = useState({
     players: [],
-    action: null
+    action: null,
+    board: [],
+    round : 1,
+    firstCard : null,
+    currentPlayerIndex : 1,
+    
   });
   const suits = ['♥', '♦', '♠', '♣'];
   const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Adjusted for 235 game
-  const [players, setPlayers] = useState([
-    { name: 'Player 1', hand: [], points: 0 },
-    { name: 'Player 2', hand: [], points: 0 },
-    { name: 'Player 3', hand: [], points: 0 }
-  ]);
+
   const [round, setRound] = useState(1);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(1);
   const [firstCard, setFirstCard] = useState(null);
@@ -51,23 +52,23 @@ export const Deck = () => {
   const dealCards = () => {
 
   
-    const excludedSuits = ['♣', '♦'];
-    const excludedValue = '7';
-    const deck = suits.flatMap(suit => values
-      .filter(value => !(suit === excludedSuits[0] && value === excludedValue) && !(suit === excludedSuits[1] && value === excludedValue))
-      .map(value => ({ id: `${suit}-${value}`, suit, value }))
-    );
-    for (let i = deck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-    const updatedPlayers = players.map(player => ({
-      ...player,
-      hand: deck.splice(0, 10)
-    }));
-    setPlayers(updatedPlayers);
-    setCurrentPlayerIndex(round % 3);
-    setFirstCard(null);
+    // const excludedSuits = ['♣', '♦'];
+    // const excludedValue = '7';
+    // const deck = suits.flatMap(suit => values
+    //   .filter(value => !(suit === excludedSuits[0] && value === excludedValue) && !(suit === excludedSuits[1] && value === excludedValue))
+    //   .map(value => ({ id: `${suit}-${value}`, suit, value }))
+    // );
+    // for (let i = deck.length - 1; i > 0; i--) {
+    //   const j = Math.floor(Math.random() * (i + 1));
+    //   [deck[i], deck[j]] = [deck[j], deck[i]];
+    // }
+    // const updatedPlayers = players.map(player => ({
+    //   ...player,
+    //   hand: deck.splice(0, 10)
+    // }));
+    // setPlayers(updatedPlayers);
+    // setCurrentPlayerIndex(round % 3);
+    // setFirstCard(null);
 
     const action = { action: 'dealCards' };
     sendMessage(action);
@@ -77,34 +78,35 @@ export const Deck = () => {
   };
 
   const canPlayCard = (card, playerIndex) => {
-    if (playerIndex !== currentPlayerIndex) {
+    if (playerIndex !==   gameState.currentPlayerIndex) {
       return false;
     }
-    if (!firstCard) {
+    if (!gameState.firstCard) {
       return true;
     } else {
-      const currentPlayer = players[currentPlayerIndex];
-      const hasLeadSuitCard = currentPlayer.hand.some(c => c.suit === firstCard.suit);
-      return !hasLeadSuitCard || card.suit === firstCard.suit;
+      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      const hasLeadSuitCard = currentPlayer.hand.some(c => c.suit === gameState.firstCard.suit);
+      return !hasLeadSuitCard || card.suit === gameState.firstCard.suit;
     }
   };
 
   const playCard = (cardIndex) => {
-    const currentPlayer = players[currentPlayerIndex];
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     const card = currentPlayer.hand[cardIndex];
-    if (firstCard === null) {
-      setFirstCard(card);
-    }
-    const updatedPlayers = [...players];
-    updatedPlayers[currentPlayerIndex].hand.splice(cardIndex, 1);
-    setBoard([...board, { card, playerIndex: currentPlayerIndex }]);
-    setCurrentPlayerIndex((currentPlayerIndex + 1) % players.length);
-    if (updatedPlayers.every((player) => player.hand.length === 0)) {
-      setRound(round + 1);
-    } else {
-      setCurrentPlayerIndex((currentPlayerIndex + 1) % players.length);
-    }
-    setPlayers(updatedPlayers);
+    // if (firstCard === null) {
+    //   setFirstCard(card);
+    // }
+    // const updatedPlayers = [...gameState.players];
+    // updatedPlayers[currentPlayerIndex].hand.splice(cardIndex, 1);
+    // setBoard([...board, { card, playerIndex: currentPlayerIndex }]);
+    // setCurrentPlayerIndex((currentPlayerIndex + 1) % gameState.players.length);
+    // if (updatedPlayers.every((player) => player.hand.length === 0)) {
+    //   setRound(round + 1);
+    // } else {
+    //   setCurrentPlayerIndex((currentPlayerIndex + 1) % gameState.players.length);
+    // }
+    // gameState.players=updatedPlayers;
+    
     const action = {
       currentPlayerIndex,
       action: 'playCard',
@@ -116,11 +118,11 @@ export const Deck = () => {
   };
 
   useEffect(() => {
-    if (board.length === 3) {
+    if (gameState.board.length === 3) {
       calculatePointsAndResetBoard();
     }
     
-  });
+  },[gameState.board]);
 
   const calculatePointsAndResetBoard = () => {
     const winningCard = board.reduce((max, card) => {
@@ -143,7 +145,7 @@ export const Deck = () => {
     }, board[0].card);
     const winningPlayerIndex = board.find(card => card.card.id === winningCard.id).playerIndex;
     if (winningPlayerIndex !== -1) {
-      players[winningPlayerIndex].points++;
+      gameState.players[winningPlayerIndex].points++;
     }
     setBoard([]);
     setFirstCard(null);
@@ -153,10 +155,13 @@ export const Deck = () => {
   };
 
   const renderBoard = () => {
+    if (!gameState.board || gameState.board.length === 0) {
+      return <div>No cards played yet.</div>;
+    }
     return (
       <div className="board-container">
         <div className="board">
-          {board.map((play, index) => (
+          {gameState.board.map((play, index) => (
             <div key={index} style={{ margin: '5px' }}>
               <Card suit={play.card.suit} value={play.card.value} className="card-small"/>
             </div>
@@ -167,6 +172,7 @@ export const Deck = () => {
   };
 
   const renderPlayers = () => {
+ 
     return gameState.players.map((player, index) => (
       <div key={index} className="player-container">
         <p>{player.name}</p>
@@ -186,6 +192,7 @@ export const Deck = () => {
       </div>
     ));
   };
+  
   return (
     <div className="container-fluid">
       <div className="grid-container">
@@ -202,7 +209,7 @@ export const Deck = () => {
             <div>Round: {round}</div>
             <div><h2>Scoreboard</h2></div>
             <div>
-            {players.map((player, index) => (
+            {gameState.players.map((player, index) => (
             <p key={index}>{player.name} - Points: {player.points}</p>))}
             </div>
             </div>
