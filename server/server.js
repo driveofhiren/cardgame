@@ -20,6 +20,7 @@ let gameState = {
 wss.on('connection', function connection(ws) {
   console.log('New client connected');
 
+  // Send gameState to new client
   ws.send(JSON.stringify(gameState));
 
   ws.on('message', function incoming(message) {
@@ -32,58 +33,66 @@ function updateGameState(data) {
   console.log('Received action:', data);
   if (data.action === 'dealCards') {
     dealCards();
+   
   }
   if (data.action === 'playCard') {
     const { currentPlayerIndex, cardIndex, card } = data;
     
-    playCard(currentPlayerIndex, cardIndex, card); 
+    playCard(currentPlayerIndex, cardIndex, card);
+  }
+  if(data.action === 'calculatePointsAndResetBoard') {
+    console.log('Received action:', data);
+    gameState.board = [];
+    gameState.firstCard = null;
+    gameState.currentPlayerIndex = data.currentPlayerIndex;
+    gameState.players=data.players;
+    console.log("Updated game state is ");
+console.log(gameState);
+    wss.clients.forEach(function each(client) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(gameState));
+      }
+    });
+   
   }
 }
-
 function playCard(currentPlayerIndex, cardIndex, card) {
   const currentPlayer = gameState.players[currentPlayerIndex];
 
-  if(gameState.firstCard===null){
-    gameState.firstCard=card;
+  if (gameState.firstCard === null) {
+    gameState.firstCard = card;
   }
 
-  const updatedPlayers = [...gameState.players];
-  const updatedPlayer = {
-    ...currentPlayer,
-    hand: currentPlayer.hand.filter((_, index) => index !== cardIndex)
-  };
-  updatedPlayers[currentPlayerIndex] = updatedPlayer;
+  const updatedPlayers = gameState.players.map((player, index) => {
+    if (index === gameState.currentPlayerIndex) {
+      return {
+        ...player,
+        hand: player.hand.filter((_, index) => index !== cardIndex)
+      };
+    }
+    return player;
+  });
+
+  // Update currentPlayerIndex after updating the player's hand
+  gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+
+  // Push the card onto the board after updating currentPlayerIndex
   gameState.board.push({ currentPlayerIndex, cardIndex, card });
-  console.log(gameState.board);
 
-
-  gameState.currentPlayerIndex=(gameState.currentPlayerIndex + 1) % gameState.players.length;
   if (updatedPlayers.every((player) => player.hand.length === 0)) {
     gameState.round++;
-     } else {
-      gameState.currentPlayerIndex=(gameState.currentPlayerIndex + 1) % gameState.players.length;
-     }
-  gameState.players = updatedPlayers;
+  }
 
+  gameState.players = updatedPlayers;
 
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ action: 'playCard', gameState }));
+      client.send(JSON.stringify(gameState));
     }
   });
-  
-  // Update board
-  // gameState.board = [...gameState.board, { card, playerIndex: currentPlayerIndex }];
- 
-  // const action = {
-  //   currentPlayerIndex,
-  //   action: 'playCard',
-  //   cardIndex,
-  //   card: { suit: card.suit, value: card.value }
-  // };
-  // updateGameState(action);
-  // console.log(gameState.currentPlayerIndex);
 }
+
+
 
 function dealCards() {
   const suits = ['♥', '♦', '♠', '♣'];
@@ -110,7 +119,7 @@ function dealCards() {
   // Broadcast the dealCards action along with the players array to all connected clients
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ action: 'dealCards'}));
+      client.send(JSON.stringify(gameState));
     }
   });
 }

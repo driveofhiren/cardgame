@@ -8,8 +8,11 @@ const client = new W3CWebSocket('ws://10.0.0.205:8080');
 
 
 export const Deck = () => { 
+  
   const [gameState, setGameState] = useState({
-    players: [],
+    players: [{ name: 'A', hand: [], points: 0 },
+    { name: 'B', hand: [], points: 0 },
+    { name: 'C', hand: [], points: 0 }],
     action: null,
     board: [],
     round : 1,
@@ -50,7 +53,7 @@ export const Deck = () => {
 
  
   const dealCards = () => {
-
+    // console.log(gameState);
   
     // const excludedSuits = ['♣', '♦'];
     // const excludedValue = '7';
@@ -92,6 +95,7 @@ export const Deck = () => {
 
   const playCard = (cardIndex) => {
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const currentPlayerIndex=gameState.currentPlayerIndex;
     const card = currentPlayer.hand[cardIndex];
     // if (firstCard === null) {
     //   setFirstCard(card);
@@ -125,12 +129,13 @@ export const Deck = () => {
   },[gameState.board]);
 
   const calculatePointsAndResetBoard = () => {
-    const winningCard = board.reduce((max, card) => {
-      if (card.card.suit !== firstCard.suit && max.suit === firstCard.suit) {
+    console.log(gameState.board)
+    const winningCard = gameState.board.reduce((max, card) => {
+      if (card.card.suit !== gameState.firstCard.suit && max.suit === gameState.firstCard.suit) {
         return max;
-      } else if (card.card.suit === firstCard.suit && max.suit !== firstCard.suit) {
+      } else if (card.card.suit === gameState.firstCard.suit && max.suit !== gameState.firstCard.suit) {
         return card.card;
-      } else if (card.card.suit === firstCard.suit && max.suit === firstCard.suit) {
+      } else if (card.card.suit === gameState.firstCard.suit && max.suit === gameState.firstCard.suit) {
         if (
           card.card.value === 'A' ||
           (card.card.value === 'K' && max.value !== 'A') ||
@@ -142,18 +147,46 @@ export const Deck = () => {
         }
       }
       return max;
-    }, board[0].card);
-    const winningPlayerIndex = board.find(card => card.card.id === winningCard.id).playerIndex;
+    }, gameState.board[0].card);
+    
+    console.log('Winning card:', winningCard);
+    
+    const winningPlayerIndex = 
+    //currentplayerindex property of winning card  
+    gameState.board.find(card => card.card === winningCard).currentPlayerIndex;
+      console.log('Winning PLAYER:', winningPlayerIndex);
+    
     if (winningPlayerIndex !== -1) {
-      gameState.players[winningPlayerIndex].points++;
-    }
-    setBoard([]);
-    setFirstCard(null);
-    setCurrentPlayerIndex(winningPlayerIndex);
-    const message = JSON.stringify({ winningPlayerIndex, action: 'calculatePointsAndResetBoard' });
-    client.send(message);
-  };
+      // Create a copy of gameState.players
+      const updatedPlayers = [...gameState.players];
+      // Update the points for the winning player
+      updatedPlayers[winningPlayerIndex] = {
+        ...updatedPlayers[winningPlayerIndex],
+        points: updatedPlayers[winningPlayerIndex].points + 1
+      };
+      // Update gameState with the new players array
+      // setGameState(prevState => ({
+      //   ...prevState,
+      //   board: [],
+      //   firstCard: null,
+      //   players: updatedPlayers,
+      //   currentPlayerIndex: winningPlayerIndex 
+      // }));
 
+
+      const action = { action: 'calculatePointsAndResetBoard', 
+                       currentPlayerIndex : winningPlayerIndex, 
+                       players: updatedPlayers 
+                      };
+      sendMessage(action);
+  
+    }
+
+
+ 
+  };
+  
+  
   const renderBoard = () => {
     if (!gameState.board || gameState.board.length === 0) {
       return <div>No cards played yet.</div>;
@@ -172,7 +205,6 @@ export const Deck = () => {
   };
 
   const renderPlayers = () => {
- 
     return gameState.players.map((player, index) => (
       <div key={index} className="player-container">
         <p>{player.name}</p>
