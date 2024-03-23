@@ -95,6 +95,7 @@ function playCard(currentPlayerIndex, cardIndex, card) {
 
 
 function dealCards() {
+
   const suits = ['♥', '♦', '♠', '♣'];
   const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Adjusted for 235 game
   

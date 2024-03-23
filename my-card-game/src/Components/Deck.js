@@ -125,6 +125,11 @@ export const Deck = () => {
     if (gameState.board.length === 3) {
       calculatePointsAndResetBoard();
     }
+    const allHandsEmpty = gameState.players.every(player => player.hand.length === 0);
+    if (allHandsEmpty) {
+      // Start a new round by dealing cards
+      dealCards();
+    }
     
   },[gameState.board]);
 
@@ -176,7 +181,8 @@ export const Deck = () => {
 
       const action = { action: 'calculatePointsAndResetBoard', 
                        currentPlayerIndex : winningPlayerIndex, 
-                       players: updatedPlayers 
+                       players: updatedPlayers ,
+                       round: gameState.round
                       };
       sendMessage(action);
   
@@ -238,7 +244,7 @@ export const Deck = () => {
           <div className="row">
           <div id="labels">
             <button className="deal-button" onClick={dealCards}>Deal Cards</button>
-            <div>Round: {round}</div>
+            <div>Round: {gameState.round}</div>
             <div><h2>Scoreboard</h2></div>
             <div>
             {gameState.players.map((player, index) => (
