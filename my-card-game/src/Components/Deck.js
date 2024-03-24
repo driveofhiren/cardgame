@@ -20,14 +20,15 @@ export const Deck = () => {
     currentPlayerIndex : 1,
     
   });
-  const suits = ['♥', '♦', '♠', '♣'];
-  const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Adjusted for 235 game
+  const [playerIndex, setPlayerIndex] = useState(-1); 
+  // const suits = ['♥', '♦', '♠', '♣'];
+  // const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Adjusted for 235 game
 
-  const [round, setRound] = useState(1);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(1);
-  const [firstCard, setFirstCard] = useState(null);
-  const [board, setBoard] = useState([]); // Array to store played cards
-  const [cardsDealt, setCardsDealt] = useState(false); 
+  // const [round, setRound] = useState(1);
+  // const [currentPlayerIndex, setCurrentPlayerIndex] = useState(1);
+  // const [firstCard, setFirstCard] = useState(null);
+  // const [board, setBoard] = useState([]); // Array to store played cards
+  // const [cardsDealt, setCardsDealt] = useState(false); 
 
   const sendMessage = (action) => {
     if (client.readyState === WebSocket.OPEN) {
@@ -48,6 +49,9 @@ export const Deck = () => {
       const data = JSON.parse(message.data);
       console.log('Received action:', data);
       setGameState(data);
+      if (data.playerIndex !== undefined) {
+        setPlayerIndex(data.playerIndex); // Set player index received from the server
+      }
     };
   }, []); 
 
@@ -215,21 +219,26 @@ export const Deck = () => {
       <div key={index} className="player-container">
         <p>{player.name}</p>
         <div className="hand">
-          {player.hand.map((card, cardIndex) => (
-            <button
-              key={card.id}
-              className="card-button"
-              onClick={() => playCard(cardIndex)}
-              disabled={!canPlayCard(card, index)}
-              style={{ opacity: canPlayCard(card, index) ? 1 : 0.3 }}
-            >
-              <Card suit={card.suit} value={card.value} />
-            </button>
-          ))}
+          {playerIndex === index ? (
+            player.hand.map((card, cardIndex) => (
+              <button
+                key={card.id}
+                className="card-button"
+                onClick={() => playCard(cardIndex)}
+                disabled={!canPlayCard(card, index)}
+                style={{ opacity: canPlayCard(card, index) ? 1 : 0.3 }}
+              >
+                <Card suit={card.suit} value={card.value} />
+              </button>
+            ))
+          ) : (
+            <div>Hidden</div>
+          )}
         </div>
       </div>
     ));
   };
+  
   
   return (
     <div className="container-fluid">
@@ -259,4 +268,4 @@ export const Deck = () => {
       </div>
     </div>
   );
-  }   
+  }          
