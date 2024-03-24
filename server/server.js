@@ -16,18 +16,28 @@ let gameState = {
   firstCard : null,
   currentPlayerIndex : 1,
 };
+let nextClientId = 1; // Counter for assigning unique client IDs
+let clients = {};
+wss.on("connection", function connection(ws) {
+  const clientId = nextClientId++;
+  const playerName = gameState.players[clientId - 1].name; // Assign player name based on client ID
+  console.log("New client connected " + clientId + " with name " + playerName);
+  // Send gameState to new client along with the respective player's hand and assigned player index
+  const playerGameState = {
+    ...gameState,
+    playerIndex: clientId - 1, // Assign player index to send to the client
+  };
+  ws.send(JSON.stringify(playerGameState));
 
-wss.on('connection', function connection(ws) {
-  console.log('New client connected');
+  clients[clientId] = ws;
 
-  // Send gameState to new client
-  ws.send(JSON.stringify(gameState));
-
-  ws.on('message', function incoming(message) {
+  ws.on("message", function incoming(message) {
     const data = JSON.parse(message);
     updateGameState(data);
   });
 });
+
+
 
 function updateGameState(data) {
   console.log('Received action:', data);
@@ -95,7 +105,6 @@ function playCard(currentPlayerIndex, cardIndex, card) {
 
 
 function dealCards() {
-
   const suits = ['♥', '♦', '♠', '♣'];
   const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Adjusted for 235 game
   
