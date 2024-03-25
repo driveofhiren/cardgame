@@ -1,27 +1,29 @@
 .board-container {
-    display: flex;
-    margin-top: 20px; 
-    
-
-  }
+  display: flex;
+  justify-content: center; /* Center the board horizontally */
+  margin-top: 20px; /* Adjust margin as needed */
+}
   .hand{
   display: flex;
   justify-content: center; /* Center the cards horizontally */
   gap: 5px; }
 
   .board {
-  background-color: #644557;
-  /*Backgroundcolorfortheboard*/border-radius: 10px;
-  padding: 20px;
-  display: flex;
+    margin-top: 50px;
+    background-color: #c9a3ff;
+    border-radius: 10px;
+    padding:70px 90px 70px 90px;
+    display: flex;
   
-  /*Setdisplaytoflex*/flex-wrap: nowrap;
-  /*Preventwrappingtokeepcardsinasingleline*/overflow-x: auto;
-  flex-direction: column;
-  width: 100px;
-  height: auto;
-  
-}
+    position: relative; /* Ensure relative positioning */
+  }
+  .card-container {
+    position: absolute;
+    left: 20px; /* Adjust spacing from the left */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%);
+    margin-left: 5px;
+  }
   .grid-container {
     display: grid;
     grid-template-columns: 8fr 2fr; /* 80/20 split */
@@ -67,20 +69,28 @@
   
   body {
     font-family: Arial, sans-serif;
-    color: aliceblue;
-    background-color: #1a242f; /* Light blue-grey background */
+    color: rgb(255, 255, 255) !important;
+    background-color: #1a242f !important; /* Light blue-grey background */
   }
+.current-player {
+  background-color: rgba(60, 255, 0, 0.378);
+  padding: 5px;
+  /*Transparentyellowhighlight*/border-radius: 5px;-webkit-border-radius:;
+  -moz-border-radius:;
+  -ms-border-radius:;
+  -o-border-radius:;
+}
 
   .deal-button {
-    background-color: #4CAF50; /* Green */
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
+    background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
   }
   #players-hand {
     width: 90%;

@@ -6,18 +6,20 @@ const wss = new WebSocket.Server({ port: PORT });
 
 let gameState = {
   players: [
-    { name: 'A', hand: [], points: 0 },
-    { name: 'B', hand: [], points: 0 },
-    { name: 'C', hand: [], points: 0 }
+    { name: 'Hiren', hand: [], points: 0 },
+    { name: 'Nerih', hand: [], points: 0 },
+    { name: 'Gohil', hand: [], points: 0 }
   ],
   action: null,
   board: [],
-  round : 1,
-  firstCard : null,
-  currentPlayerIndex : 1,
+  round: 1,
+  firstCard: null,
+  currentPlayerIndex: 2,
+  masterSuit: null
 };
 let nextClientId = 1; // Counter for assigning unique client IDs
 let clients = {};
+
 wss.on("connection", function connection(ws) {
   const clientId = nextClientId++;
   const playerName = gameState.players[clientId - 1].name; // Assign player name based on client ID
@@ -37,35 +39,52 @@ wss.on("connection", function connection(ws) {
   });
 });
 
-
-
 function updateGameState(data) {
   console.log('Received action:', data);
   if (data.action === 'dealCards') {
     dealCards();
-   
   }
   if (data.action === 'playCard') {
-    const { currentPlayerIndex, cardIndex, card } = data;
-    
-    playCard(currentPlayerIndex, cardIndex, card);
+    playCard(data.currentPlayerIndex, data.cardIndex, data.card);
   }
-  if(data.action === 'calculatePointsAndResetBoard') {
-    console.log('Received action:', data);
-    gameState.board = [];
-    gameState.firstCard = null;
-    gameState.currentPlayerIndex = data.currentPlayerIndex;
-    gameState.players=data.players;
-    console.log("Updated game state is ");
-console.log(gameState);
-    wss.clients.forEach(function each(client) {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(gameState));
-      }
-    });
-   
+  if (data.action === 'decideMasterSuit') {
+    decideMasterSuit(data.masterSuit);
+  }
+  if (data.action === 'calculatePointsAndResetBoard') {
+    calculatePointsAndResetBoard(data.currentPlayerIndex, data.players);
   }
 }
+
+function dealCards() {
+  const suits = ['♥', '♦', '♠', '♣'];
+  const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Adjusted for 235 game
+
+  const excludedSuits = ['♣', '♦'];
+  const excludedValue = '7';
+  const deck = suits.flatMap(suit => values
+    .filter(value => !(suit === excludedSuits[0] && value === excludedValue) && !(suit === excludedSuits[1] && value === excludedValue))
+    .map(value => ({ id: `${suit}-${value}`, suit, value }))
+  );
+
+  // Shuffle the deck
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+
+  // Deal cards to players
+  gameState.players.forEach((player, index) => {
+    gameState.players[index].hand = deck.slice(index * 10, (index + 1) * 10);
+  });
+
+  // Notify the clients to decide the master suit
+  const action = {
+    action: 'chooseMasterSuit',
+  };
+
+  broadcastGameState(action);
+}
+
 function playCard(currentPlayerIndex, cardIndex, card) {
   const currentPlayer = gameState.players[currentPlayerIndex];
 
@@ -91,45 +110,35 @@ function playCard(currentPlayerIndex, cardIndex, card) {
 
   if (updatedPlayers.every((player) => player.hand.length === 0)) {
     gameState.round++;
+    gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % updatedPlayers.length;
   }
 
   gameState.players = updatedPlayers;
 
-  wss.clients.forEach(function each(client) {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(gameState));
-    }
-  });
+  broadcastGameState();
 }
 
+function decideMasterSuit(suit) {
+  gameState.masterSuit = suit;
 
+  broadcastGameState();
+}
 
-function dealCards() {
-  const suits = ['♥', '♦', '♠', '♣'];
-  const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Adjusted for 235 game
-  
-  const excludedSuits = ['♣', '♦'];
-  const excludedValue = '7';
-  const deck = suits.flatMap(suit => values
-    .filter(value => !(suit === excludedSuits[0] && value === excludedValue) && !(suit === excludedSuits[1] && value === excludedValue))
-    .map(value => ({ id: `${suit}-${value}`, suit, value }))
-  );
-  
-  // Shuffle the deck
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
+function calculatePointsAndResetBoard(winningPlayerIndex, players) {
+  gameState.board = [];
+  gameState.firstCard = null;
+  gameState.currentPlayerIndex = winningPlayerIndex;
+  gameState.players = players;
 
-  // Deal cards to players
-  gameState.players.forEach((player, index) => {
-    gameState.players[index].hand = deck.slice(index * 10, (index + 1) * 10);
-  });
+  broadcastGameState();
+}
 
-  // Broadcast the dealCards action along with the players array to all connected clients
+function broadcastGameState(action) {
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(gameState));
+      // console.log(gameState);
+      const message = action ? { ...gameState, ...action } : gameState;
+      client.send(JSON.stringify(message));
     }
   });
 }

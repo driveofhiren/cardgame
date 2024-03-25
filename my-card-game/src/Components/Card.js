@@ -32,7 +32,8 @@ export const Card = ({ id, suit, value }) => {
   const cardStyle = {
     backgroundColor: cardColor,
     color: fontColor,
-    fontSize: "30px",
+    fontSize: "25px",
+    width: "60px",
     
     boxShadow: "5px 5px 5px rgba(0, 0, 0, 0.6)", // Added shadow with opacity
 
