@@ -197,13 +197,24 @@ export const Deck = () => {
       };
   
       return (
-        <div>
-          <p>Select Master Suit:</p>
-          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♥')}>♥</button>
-          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♦')}>♦</button>
-          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♠')}>♠</button>
-          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♣')}>♣</button>
+        <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+        <div style={{ width: '50%', display: 'flex', justifyContent: 'center' }}>
+          <a onClick={() => chooseMasterSuitAndUpdatePlayer('♥')} style={{ margin: '5px' }}>
+            <Card suit="♥" value="" />
+          </a>
+          <a onClick={() => chooseMasterSuitAndUpdatePlayer('♦')} style={{ margin: '5px' }}>
+            <Card suit="♦" value="" />
+          </a>
         </div>
+        <div style={{ width: '50%', display: 'flex', justifyContent: 'center' }}>
+          <a onClick={() => chooseMasterSuitAndUpdatePlayer('♠')} style={{ margin: '5px' }}>
+            <Card suit="♠" value="" />
+          </a>
+          <a onClick={() => chooseMasterSuitAndUpdatePlayer('♣')} style={{ margin: '5px' }}>
+            <Card suit="♣" value="" />
+          </a>
+        </div>
+      </div>
       );
     }
     return null; // Return null if the condition isn't met
@@ -279,18 +290,20 @@ const masterCard = gameState.masterSuit ? { suit: gameState.masterSuit, value: '
 )}
               <div className="mt-3">Round: {gameState.round}</div>
  <div>
- <p><strong>Master Suit: {masterCardplayer !== null && gameState.players[masterCardplayer] ? gameState.players[masterCardplayer].name : 'None'}</strong></p>
-
-
-  
+ <p><strong>Master Suit : ( {masterCardplayer !== null && gameState.players[masterCardplayer] ? gameState.players[masterCardplayer].name : 'None'} )</strong></p>
+ 
       </div>
-              <div className="mt-3"><h2>Scoreboard</h2></div>
-             
-              {masterCard && (
+        
+      {masterCard && (
             <div style={{ margin: '5px' }}>
               <Card suit={masterCard.suit}  className="card-small"/>
             </div>
           )}
+            <div className="row">
+            <div className="mt-3">{renderMasterSuitSelection()}</div>
+          </div>
+              <div className="mt-3"><h2>Scoreboard</h2></div>
+           
               <div>
                 {gameState.players.map((player, index) => (
                   <p key={index} className={`${index===gameState.currentPlayerIndex  ? 'current-player' : ''}`}>{player.name} - Points: {player.points}</p>
@@ -298,9 +311,7 @@ const masterCard = gameState.masterSuit ? { suit: gameState.masterSuit, value: '
               </div>
             </div>
           </div>
-          <div className="row">
-            <div className="mt-3">{renderMasterSuitSelection()}</div>
-          </div>
+        
           
         </div>
       </div>
