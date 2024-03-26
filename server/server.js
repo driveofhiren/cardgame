@@ -10,11 +10,11 @@ let gameState = {
     { name: 'Nerih', hand: [], points: 0 },
     { name: 'Gohil', hand: [], points: 0 }
   ],
-  action: null,
+  masterCardplayer: 1,
   board: [],
   round: 1,
   firstCard: null,
-  currentPlayerIndex: 2,
+  currentPlayerIndex: 1,
   masterSuit: null
 };
 let nextClientId = 1; // Counter for assigning unique client IDs
@@ -40,7 +40,7 @@ wss.on("connection", function connection(ws) {
 });
 
 function updateGameState(data) {
-  console.log('Received action:', data);
+  // console.log('****ACTION LOGS*****', data);
   if (data.action === 'dealCards') {
     dealCards();
   }
@@ -52,6 +52,7 @@ function updateGameState(data) {
   }
   if (data.action === 'calculatePointsAndResetBoard') {
     calculatePointsAndResetBoard(data.currentPlayerIndex, data.players);
+    gameState.masterCardplayer=data.masterCardplayer;
   }
 }
 
@@ -110,7 +111,7 @@ function playCard(currentPlayerIndex, cardIndex, card) {
 
   if (updatedPlayers.every((player) => player.hand.length === 0)) {
     gameState.round++;
-    gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % updatedPlayers.length;
+
   }
 
   gameState.players = updatedPlayers;
@@ -128,6 +129,9 @@ function calculatePointsAndResetBoard(winningPlayerIndex, players) {
   gameState.board = [];
   gameState.firstCard = null;
   gameState.currentPlayerIndex = winningPlayerIndex;
+  // gameState.masterCardplayer=winningPlayerIndex;
+  
+ 
   gameState.players = players;
 
   broadcastGameState();
@@ -136,7 +140,7 @@ function calculatePointsAndResetBoard(winningPlayerIndex, players) {
 function broadcastGameState(action) {
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
-      // console.log(gameState);
+      console.log(gameState);
       const message = action ? { ...gameState, ...action } : gameState;
       client.send(JSON.stringify(message));
     }

@@ -75,10 +75,8 @@
 .current-player {
   background-color: rgba(60, 255, 0, 0.378);
   padding: 5px;
-  /*Transparentyellowhighlight*/border-radius: 5px;-webkit-border-radius:;
-  -moz-border-radius:;
-  -ms-border-radius:;
-  -o-border-radius:;
+ border-radius: 5px;
+
 }
 
   .deal-button {
@@ -95,12 +93,5 @@
   #players-hand {
     width: 90%;
   }
-  
-  #board {
-    /* Add styles for the game board */
-  }
-  
-  #labels {
-    /* Add styles for the labels */
-  }
+
   

@@ -12,16 +12,17 @@ export const Deck = () => {
     players: [{ name: 'A', hand: [], points: 0 },
               { name: 'B', hand: [], points: 0 },
               { name: 'C', hand: [], points: 0 }],
-    action: null,
+    currentPlayerIndex: 1,
+    masterCardplayer: 1,
     board: [],
     round: 1,
     masterSuit: null,
-    currentPlayerIndex: 0,
+   
     firstCard: null
   });
 
   const [playerIndex, setPlayerIndex] = useState(-1);
-  const [masterSuitSelection, setMasterSuitSelection] = useState(null);
+  // const [masterSuitSelection, setMasterSuitSelection] = useState(null);
   const [masterCardplayer, setMasterCardPlayer] = useState(null);
   useEffect(() => {
     if (!gameState.masterSuit) {
@@ -112,6 +113,7 @@ export const Deck = () => {
     const allHandsEmpty = gameState.players.every(player => player.hand.length === 0);
     if (allHandsEmpty) {
       gameState.masterSuit = null;
+      
       dealCards();
     }
   },[gameState.board]);
@@ -138,27 +140,43 @@ export const Deck = () => {
       return max;
     }, gameState.board[0].card);
 
-    const winningPlayerIndex = gameState.board.find(card => card.card === winningCard).currentPlayerIndex;
-    
+    const winningPlayerIndex = gameState.board.find(card => card.card === winningCard).currentPlayerIndex; 
     if (winningPlayerIndex !== -1) {
       const updatedPlayers = [...gameState.players];
       updatedPlayers[winningPlayerIndex] = {
         ...updatedPlayers[winningPlayerIndex],
         points: updatedPlayers[winningPlayerIndex].points + 1
       };
-
-      const action = {
-        action: 'calculatePointsAndResetBoard',
-        currentPlayerIndex: winningPlayerIndex,
-        players: updatedPlayers,
-        round: gameState.round
-      };
-      sendMessage(action);
+    
+      const allHandsEmpty = gameState.players.every(player => player.hand.length === 0);
+      const temp= (2 - gameState.masterCardplayer) % 3;
+      if(allHandsEmpty){
+        const action = {
+          action: 'calculatePointsAndResetBoard',
+          currentPlayerIndex: winningPlayerIndex,
+          masterCardplayer:temp,
+          players: updatedPlayers,
+          round: gameState.round
+        };
+        sendMessage(action);
+      }
+      else
+      {
+        const action = {
+          action: 'calculatePointsAndResetBoard',
+          currentPlayerIndex: winningPlayerIndex,
+          masterCardplayer:gameState.masterCardplayer,
+          players: updatedPlayers,
+          round: gameState.round
+        };
+        sendMessage(action);
+      }
+    
     }
   };
 
   const chooseMasterSuit = (suit) => {
-    setMasterSuitSelection(suit); // Set selected master suit
+    // setMasterSuitSelection(suit); // Set selected master suit
     const action = {
       action: 'decideMasterSuit', 
       masterSuit: suit,
@@ -181,10 +199,10 @@ export const Deck = () => {
       return (
         <div>
           <p>Select Master Suit:</p>
-          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♥')}>♥ Hearts</button>
-          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♦')}>♦ Diamonds</button>
-          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♠')}>♠ Spades</button>
-          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♣')}>♣ Clubs</button>
+          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♥')}>♥</button>
+          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♦')}>♦</button>
+          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♠')}>♠</button>
+          <button onClick={() => chooseMasterSuitAndUpdatePlayer('♣')}>♣</button>
         </div>
       );
     }
