@@ -171,6 +171,10 @@ export const Deck = () => {
 
 			if (allHandsEmpty) {
 				updatedPlayers.forEach((player) => {
+					player.points = player.points - player.target
+				})
+
+				updatedPlayers.forEach((player) => {
 					if (player.target === 5) {
 						player.target = 2
 					} else if (player.target === 2) {
@@ -179,16 +183,11 @@ export const Deck = () => {
 						player.target = 5
 					}
 				})
-
 				let MasterCardPlayer = null
 				updatedPlayers.forEach((player, index) => {
 					if (player.target === 5) {
 						MasterCardPlayer = index
 					}
-				})
-
-				updatedPlayers.forEach((player) => {
-					player.points = player.points - player.target
 				})
 
 				const action = {
