@@ -1,20 +1,19 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "deck.js",
-        "use": "@vercel/node"
-      },
-      {
-        "src": "public/**/*",
-        "use": "@vercel/static"
-      }
-    ],
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "/index.html"
-      }
-    ]
-  }
-  
+	"version": 2,
+	"builds": [
+		{
+			"src": "deck.js",
+			"use": "@vercel/node"
+		},
+		{
+			"src": "public/**/*",
+			"use": "@vercel/static"
+		}
+	],
+	"routes": [
+		{
+			"src": "/(.*)",
+			"dest": "/public/index.html"
+		}
+	]
+}
