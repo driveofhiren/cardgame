@@ -5,3 +5,5 @@ Rules:
 1. Run the server:
 2. Connect exact 3 devices to the server's IP address.
 3. Each device has its own deck. You can see scoreboard and Name.
+
+

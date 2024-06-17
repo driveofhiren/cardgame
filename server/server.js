@@ -1,20 +1,18 @@
 const WebSocket = require('ws')
-
 const PORT = 8080
-
 const wss = new WebSocket.Server({ port: PORT })
 
 let gameState = {
 	players: [
-		{ name: 'P1', hand: [], points: 0 },
-		{ name: 'P2', hand: [], points: 0 },
-		{ name: 'P3', hand: [], points: 0 },
+		{ name: 'P1', hand: [], points: 0, target: 2 },
+		{ name: 'P2', hand: [], points: 0, target: 3 },
+		{ name: 'P3', hand: [], points: 0, target: 5 },
 	],
-	masterCardplayer: 1,
+	masterCardplayer: 2,
 	board: [],
 	round: 1,
 	firstCard: null,
-	currentPlayerIndex: 1,
+	currentPlayerIndex: 2,
 	masterSuit: null,
 }
 let nextClientId = 1 // Counter for assigning unique client IDs
@@ -51,8 +49,12 @@ function updateGameState(data) {
 		decideMasterSuit(data.masterSuit)
 	}
 	if (data.action === 'calculatePointsAndResetBoard') {
-		calculatePointsAndResetBoard(data.currentPlayerIndex, data.players)
-		gameState.masterCardplayer = data.masterCardplayer
+		calculatePointsAndResetBoard(
+			data.currentPlayerIndex,
+			data.players,
+			data.masterCardplayer,
+			data.round
+		)
 	}
 }
 
@@ -78,10 +80,14 @@ function dealCards() {
 		;[deck[i], deck[j]] = [deck[j], deck[i]]
 	}
 
-	// Deal cards to players
+	// Deal cards to players orignal
 	gameState.players.forEach((player, index) => {
 		gameState.players[index].hand = deck.slice(index * 10, (index + 1) * 10)
 	})
+
+	// gameState.players.forEach((player, index) => {
+	// 	gameState.players[index].hand = deck.slice(index * 3, (index + 1) * 3)
+	// })
 
 	// Notify the clients to decide the master suit
 	const action = {
@@ -130,13 +136,18 @@ function decideMasterSuit(suit) {
 	broadcastGameState()
 }
 
-function calculatePointsAndResetBoard(winningPlayerIndex, players) {
+function calculatePointsAndResetBoard(
+	currentPlayerIndex,
+	players,
+	masterCardplayer,
+	round
+) {
+	gameState.players = players
+	gameState.currentPlayerIndex = currentPlayerIndex
+	gameState.masterCardplayer = masterCardplayer
 	gameState.board = []
 	gameState.firstCard = null
-	gameState.currentPlayerIndex = winningPlayerIndex
-	// gameState.masterCardplayer=winningPlayerIndex;
-
-	gameState.players = players
+	gameState.round = round
 
 	broadcastGameState()
 }

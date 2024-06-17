@@ -5,32 +5,27 @@ import { Card } from './Card'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-const client = new W3CWebSocket('ws://10.0.0.205:8080')
+const client = new W3CWebSocket('ws://192.168.0.21:8080')
 
 export const Deck = () => {
 	const [gameState, setGameState] = useState({
 		players: [
-			{ name: 'A', hand: [], points: 0 },
-			{ name: 'B', hand: [], points: 0 },
-			{ name: 'C', hand: [], points: 0 },
+			{ name: 'A', hand: [], points: 0, target: 2 },
+			{ name: 'B', hand: [], points: 0, target: 3 },
+			{ name: 'C', hand: [], points: 0, target: 5 },
 		],
-		currentPlayerIndex: 1,
-		masterCardplayer: 1,
+		masterCardplayer: 2,
 		board: [],
 		round: 1,
-		masterSuit: null,
-
 		firstCard: null,
+		currentPlayerIndex: 2,
+		masterSuit: null,
 	})
 
 	const [playerIndex, setPlayerIndex] = useState(-1)
-	// const [masterSuitSelection, setMasterSuitSelection] = useState(null);
-	const [masterCardplayer, setMasterCardPlayer] = useState(null)
-	useEffect(() => {
-		if (!gameState.masterSuit) {
-			setMasterCardPlayer(gameState.currentPlayerIndex) // Update masterCardPlayer when master suit is decided
-		}
-	}, [gameState])
+	const [masterCardplayer, setmasterCardplayer] = useState(
+		gameState.masterCardplayer
+	)
 
 	const sendMessage = (action) => {
 		if (client.readyState === WebSocket.OPEN) {
@@ -112,29 +107,32 @@ export const Deck = () => {
 				calculatePointsAndResetBoard()
 			}, 1000)
 		}
+	}, [gameState.board])
+
+	useEffect(() => {
 		const allHandsEmpty = gameState.players.every(
 			(player) => player.hand.length === 0
 		)
-		if (allHandsEmpty) {
-			gameState.masterSuit = null
 
-			dealCards()
+		if (allHandsEmpty) {
+			setGameState((prevState) => ({
+				...prevState,
+				masterSuit: null,
+			}))
 		}
-	}, [gameState.board])
+	}, [gameState.players])
 
 	const calculatePointsAndResetBoard = () => {
-		const masterSuit = gameState.masterSuit // Get the master suit from gameState
+		const masterSuit = gameState.masterSuit
 		const winningCard = gameState.board.reduce((max, card) => {
-			// Compare the card suits, prioritizing the master suit
 			if (card.card.suit === masterSuit && max.suit !== masterSuit) {
-				return card.card // If the current card has master suit and the previous doesn't, it wins
+				return card.card
 			} else if (
 				card.card.suit !== masterSuit &&
 				max.suit === masterSuit
 			) {
-				return max // If the current card doesn't have master suit and the previous does, it wins
+				return max
 			}
-			// If both cards have the same suit or neither has the master suit, compare their values
 			if (
 				card.card.value === 'A' ||
 				(card.card.value === 'K' && max.value !== 'A') ||
@@ -159,6 +157,7 @@ export const Deck = () => {
 		const winningPlayerIndex = gameState.board.find(
 			(card) => card.card === winningCard
 		).currentPlayerIndex
+
 		if (winningPlayerIndex !== -1) {
 			const updatedPlayers = [...gameState.players]
 			updatedPlayers[winningPlayerIndex] = {
@@ -169,23 +168,58 @@ export const Deck = () => {
 			const allHandsEmpty = gameState.players.every(
 				(player) => player.hand.length === 0
 			)
-			const temp = (2 - gameState.masterCardplayer) % 3
+
 			if (allHandsEmpty) {
+				updatedPlayers.forEach((player) => {
+					if (player.target === 5) {
+						player.target = 2
+					} else if (player.target === 2) {
+						player.target = 3
+					} else if (player.target === 3) {
+						player.target = 5
+					}
+				})
+
+				let MasterCardPlayer = null
+				updatedPlayers.forEach((player, index) => {
+					if (player.target === 5) {
+						MasterCardPlayer = index
+					}
+				})
+
+				updatedPlayers.forEach((player) => {
+					player.points = player.points - player.target
+				})
+
 				const action = {
 					action: 'calculatePointsAndResetBoard',
-					currentPlayerIndex: winningPlayerIndex,
-					masterCardplayer: temp,
+					masterCardplayer: MasterCardPlayer,
+					currentPlayerIndex: MasterCardPlayer,
 					players: updatedPlayers,
 					round: gameState.round,
+					masterSuit: null,
 				}
 				sendMessage(action)
 			} else {
+				let MasterCardPlayer = null
+				gameState.players.forEach((player, index) => {
+					if (player.target === 5) {
+						MasterCardPlayer = index
+					}
+				})
+				setGameState((prevState) => ({
+					...prevState,
+					players: updatedPlayers,
+					currentPlayerIndex: winningPlayerIndex,
+				}))
+
 				const action = {
 					action: 'calculatePointsAndResetBoard',
+					masterCardplayer: MasterCardPlayer,
 					currentPlayerIndex: winningPlayerIndex,
-					masterCardplayer: gameState.masterCardplayer,
 					players: updatedPlayers,
 					round: gameState.round,
+					masterSuit: gameState.masterSuit,
 				}
 				sendMessage(action)
 			}
@@ -204,13 +238,13 @@ export const Deck = () => {
 	const renderMasterSuitSelection = () => {
 		// Check if it's the first player's turn, the master suit hasn't been chosen yet, and the player hasn't selected a suit
 		if (
-			playerIndex === gameState.currentPlayerIndex && // Only allow the first player to choose the master suit
+			playerIndex === gameState.masterCardplayer && // Only allow the first player to choose the master suit
 			// Check if the master suit hasn't been selected yet
 			!gameState.masterSuit // Check if the master suit hasn't been set yet
 		) {
 			const chooseMasterSuitAndUpdatePlayer = (suit) => {
 				chooseMasterSuit(suit) // Call chooseMasterSuit function with the selected suit
-				setMasterCardPlayer(playerIndex) // Set masterCardPlayer to the current player index
+				// Set masterCardPlayer to the current player index
 			}
 
 			return (
@@ -356,20 +390,6 @@ export const Deck = () => {
 								</button>
 							)}
 							<div className="mt-3">Round: {gameState.round}</div>
-							<div>
-								<p>
-									<strong>
-										Master Suit : ({' '}
-										{masterCardplayer !== null &&
-										gameState.players[masterCardplayer]
-											? gameState.players[
-													masterCardplayer
-											  ].name
-											: 'None'}{' '}
-										)
-									</strong>
-								</p>
-							</div>
 
 							{masterCard && (
 								<div style={{ margin: '5px' }}>
@@ -399,7 +419,8 @@ export const Deck = () => {
 												: ''
 										}`}
 									>
-										{player.name} - Points: {player.points}
+										{player.name} - Points: {player.points}{' '}
+										- Target : {player.target}
 									</p>
 								))}
 							</div>
