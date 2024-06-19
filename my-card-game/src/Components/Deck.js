@@ -2,30 +2,15 @@ import React, { useState, useEffect } from 'react'
 import './Card.css'
 import './Default.css'
 import { Card } from './Card'
+import { Setup } from './Setup'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 const client = new W3CWebSocket('ws://192.168.0.21:8080')
 
 export const Deck = () => {
-	const [gameState, setGameState] = useState({
-		players: [
-			{ name: 'A', hand: [], points: 0, target: 2 },
-			{ name: 'B', hand: [], points: 0, target: 3 },
-			{ name: 'C', hand: [], points: 0, target: 5 },
-		],
-		masterCardplayer: 2,
-		board: [],
-		round: 1,
-		firstCard: null,
-		currentPlayerIndex: 2,
-		masterSuit: null,
-	})
-
+	const [gameState, setGameState] = useState(null)
 	const [playerIndex, setPlayerIndex] = useState(-1)
-	const [masterCardplayer, setmasterCardplayer] = useState(
-		gameState.masterCardplayer
-	)
 
 	const sendMessage = (action) => {
 		if (client.readyState === WebSocket.OPEN) {
@@ -37,22 +22,17 @@ export const Deck = () => {
 	}
 
 	useEffect(() => {
-		client.onopen = () => {
-			console.log('WebSocket Client Connected')
-		}
 		client.onmessage = (message) => {
 			const data = JSON.parse(message.data)
 			console.log('Received action:', data)
-			setGameState(data)
+			if (data.totalRounds) {
+				setGameState(data)
+			}
+
 			if (data.playerIndex !== undefined) {
 				setPlayerIndex(data.playerIndex) // Set player index received from the server
 			}
 			if (data.action === 'chooseMasterSuit') {
-				// If the current player is prompted to choose the master suit
-				// Implement logic to allow the player to choose the master suit
-				// For simplicity, you can display a prompt or UI to select a suit and then send it back to the server.
-				// Example:
-				// const suit = prompt('Choose the master suit (♥, ♦, ♠, ♣):');
 				const action = {
 					action: 'decideMasterSuit',
 					masterSuit: null,
@@ -61,6 +41,48 @@ export const Deck = () => {
 			}
 		}
 	}, [])
+	useEffect(() => {
+		if (gameState && gameState.board.length === gameState.players.length) {
+			setTimeout(() => {
+				calculatePointsAndResetBoard()
+			}, 1000)
+		}
+	}, [gameState ? gameState.board : []])
+
+	useEffect(() => {
+		if (gameState) {
+			const allHandsEmpty = gameState.players.every(
+				(player) => player.hand.length === 0
+			)
+			if (allHandsEmpty) {
+				setGameState((prevState) => ({
+					...prevState,
+					masterSuit: null,
+				}))
+				const action = {
+					action: 'chooseMasterSuit',
+					masterSuit: null,
+				}
+				sendMessage(action)
+			}
+		}
+	}, [gameState ? gameState.players : []])
+
+	const startGame = (config) => {
+		if (client.readyState === WebSocket.OPEN) {
+			const action = { action: 'setup', config }
+			client.send(JSON.stringify(action))
+		} else {
+			client.onopen = () => {
+				console.log('WebSocket Client Connected')
+				const action = { action: 'setup', config }
+				client.send(JSON.stringify(action))
+			}
+		}
+	}
+	if (!gameState) {
+		return <Setup onStartGame={startGame} />
+	}
 
 	const dealCards = () => {
 		const action = { action: 'dealCards' }
@@ -100,27 +122,6 @@ export const Deck = () => {
 		}
 		sendMessage(action)
 	}
-
-	useEffect(() => {
-		if (gameState.board.length === 3) {
-			setTimeout(() => {
-				calculatePointsAndResetBoard()
-			}, 1000)
-		}
-	}, [gameState.board])
-
-	useEffect(() => {
-		const allHandsEmpty = gameState.players.every(
-			(player) => player.hand.length === 0
-		)
-
-		if (allHandsEmpty) {
-			setGameState((prevState) => ({
-				...prevState,
-				masterSuit: null,
-			}))
-		}
-	}, [gameState.players])
 
 	const calculatePointsAndResetBoard = () => {
 		const masterSuit = gameState.masterSuit
@@ -183,9 +184,13 @@ export const Deck = () => {
 						player.target = 5
 					}
 				})
+
 				let MasterCardPlayer = null
+				let maxTarget = -Infinity // Initialize maxTarget to a very low value
+
 				updatedPlayers.forEach((player, index) => {
-					if (player.target === 5) {
+					if (player.target > maxTarget) {
+						maxTarget = player.target
 						MasterCardPlayer = index
 					}
 				})
@@ -200,12 +205,13 @@ export const Deck = () => {
 				}
 				sendMessage(action)
 			} else {
-				let MasterCardPlayer = null
-				gameState.players.forEach((player, index) => {
-					if (player.target === 5) {
-						MasterCardPlayer = index
-					}
-				})
+				// let MasterCardPlayer = null
+				// gameState.players.forEach((player, index) => {
+				// 	if (player.target === 5) {
+				// 		MasterCardPlayer = index
+				// 	}
+				// })
+
 				setGameState((prevState) => ({
 					...prevState,
 					players: updatedPlayers,
@@ -214,7 +220,7 @@ export const Deck = () => {
 
 				const action = {
 					action: 'calculatePointsAndResetBoard',
-					masterCardplayer: MasterCardPlayer,
+					masterCardplayer: gameState.masterCardplayer,
 					currentPlayerIndex: winningPlayerIndex,
 					players: updatedPlayers,
 					round: gameState.round,
@@ -222,11 +228,20 @@ export const Deck = () => {
 				}
 				sendMessage(action)
 			}
+			if (gameState.totalRounds < gameState.round) {
+				//fine player with max points
+				const maxPoints = Math.max(
+					...gameState.players.map((p) => p.points)
+				)
+				const winner = gameState.players.find(
+					(player) => player.points === maxPoints
+				)
+				alert(`${winner.name} Won. Restart the Server`)
+			}
 		}
 	}
 
 	const chooseMasterSuit = (suit) => {
-		// setMasterSuitSelection(suit); // Set selected master suit
 		const action = {
 			action: 'decideMasterSuit',
 			masterSuit: suit,
@@ -235,15 +250,13 @@ export const Deck = () => {
 	}
 
 	const renderMasterSuitSelection = () => {
-		// Check if it's the first player's turn, the master suit hasn't been chosen yet, and the player hasn't selected a suit
 		if (
-			playerIndex === gameState.masterCardplayer && // Only allow the first player to choose the master suit
-			// Check if the master suit hasn't been selected yet
-			!gameState.masterSuit // Check if the master suit hasn't been set yet
+			gameState &&
+			playerIndex === gameState.masterCardplayer &&
+			!gameState.masterSuit
 		) {
 			const chooseMasterSuitAndUpdatePlayer = (suit) => {
-				chooseMasterSuit(suit) // Call chooseMasterSuit function with the selected suit
-				// Set masterCardPlayer to the current player index
+				chooseMasterSuit(suit)
 			}
 
 			return (
@@ -291,13 +304,14 @@ export const Deck = () => {
 				</div>
 			)
 		}
-		return null // Return null if the condition isn't met
+		return null
 	}
 
 	const renderBoard = () => {
 		return (
 			<div className="board-container">
 				<div className="board">
+					{console.log(gameState)}
 					{gameState.board &&
 						gameState.board.length > 0 &&
 						gameState.board.map((play, index) => (
