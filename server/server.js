@@ -8,12 +8,14 @@ let gameState = {
 		{ name: 'P2', hand: [], points: 0, target: 3 },
 		{ name: 'P3', hand: [], points: 0, target: 5 },
 	],
-	masterCardplayer: 2,
+	masterCardplayer: 0,
 	board: [],
 	round: 1,
 	firstCard: null,
 	currentPlayerIndex: 2,
 	masterSuit: null,
+	totalRounds: null,
+	numCards: null,
 }
 let nextClientId = 1 // Counter for assigning unique client IDs
 let clients = {}
@@ -33,9 +35,59 @@ wss.on('connection', function connection(ws) {
 
 	ws.on('message', function incoming(message) {
 		const data = JSON.parse(message)
-		updateGameState(data)
+		if (data.action === 'setup') {
+			setupGame(data.config, ws)
+			console.log('called')
+		} else updateGameState(data)
 	})
 })
+
+//set up this function for different games.
+function setupGame(config, ws) {
+	const { numPlayers, numRounds, numCards, playerNames } = config
+
+	const calculateTargets = (numPlayers, numCards) => {
+		const totalPairs = numCards / numPlayers
+		const targets = []
+
+		// Example logic for assigning targets based on number of players
+		if (numPlayers === 3) {
+			targets.push(2, 3, 5)
+		} else if (numPlayers === 5) {
+			targets.push(1, 2, 1, 1, 1)
+		} else {
+			// Handle other cases if needed
+			// Default to some reasonable targets
+			for (let i = 0; i < numPlayers; i++) {
+				targets.push(3) // Default to 3 for each player
+			}
+		}
+
+		return targets
+	}
+
+	// Calculate targets based on number of players and total cards
+	const targets = calculateTargets(numPlayers, numCards)
+
+	gameState = {
+		players: playerNames.map((name, index) => ({
+			name,
+			hand: [],
+			points: 0,
+			target: targets[index],
+		})),
+		masterCardplayer: numPlayers - 1,
+		board: [],
+		round: 1,
+		firstCard: null,
+		currentPlayerIndex: numPlayers - 1,
+		masterSuit: null,
+		totalRounds: numRounds,
+		numCards: numCards,
+	}
+	const playerGameState = { ...gameState, playerIndex: 0 }
+	ws.send(JSON.stringify(playerGameState))
+}
 
 function updateGameState(data) {
 	// console.log('****ACTION LOGS*****', data);
@@ -82,7 +134,10 @@ function dealCards() {
 
 	// Deal cards to players orignal
 	gameState.players.forEach((player, index) => {
-		gameState.players[index].hand = deck.slice(index * 10, (index + 1) * 10)
+		gameState.players[index].hand = deck.slice(
+			index * gameState.numCards,
+			(index + 1) * gameState.numCards
+		)
 	})
 
 	// gameState.players.forEach((player, index) => {
