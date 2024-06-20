@@ -236,7 +236,7 @@ export const Deck = () => {
 				const winner = gameState.players.find(
 					(player) => player.points === maxPoints
 				)
-				alert(`${winner.name} Won. Restart the Server`)
+				alert(`${winner.name}  _ Won. Restart the Server`)
 			}
 		}
 	}
