@@ -60,27 +60,12 @@ export const Deck = () => {
 					...prevState,
 					masterSuit: null,
 				}))
-				// const action = {
-				// 	action: 'chooseMasterSuit',
-				// 	masterSuit: null,
-				// }
-				// sendMessage(action)
-			}
-
-			if (!gameState.masterSuit) {
-				// Determine the master suit based on the round number
-				const suits = ['♠', '♦', '♣', '♥'] // Cycles through Spades, Diamonds, Hearts
-				const suitIndex = (gameState.round - 1) % suits.length
-				const selectedSuit = suits[suitIndex]
-
-				// Automate the master suit selection
 				const action = {
-					action: 'decideMasterSuit',
-					masterSuit: selectedSuit,
+					action: 'chooseMasterSuit',
+					masterSuit: null,
 				}
 				sendMessage(action)
 			}
-			//if mastersuit is null
 		}
 	}, [gameState ? gameState.players : []])
 
@@ -105,9 +90,12 @@ export const Deck = () => {
 	if (!gameState) {
 		return <Setup onStartGame={startGame} />
 	}
-
 	const renderTargetSetting = () => {
-		if (gameState && !gameState.players[playerIndex].target) {
+		if (
+			gameState &&
+			gameState.players[playerIndex] &&
+			gameState.players[playerIndex].target === null
+		) {
 			return (
 				<div>
 					<h3>Set Your Target</h3>
@@ -217,34 +205,9 @@ export const Deck = () => {
 
 			if (allHandsEmpty) {
 				updatedPlayers.forEach((player) => {
-					if (player.points === player.target)
-						player.fp = player.fp + player.target + 10
+					player.points = player.points - player.target
 				})
 
-				if (gameState.numCards > 1) {
-					//decrement it
-					gameState.numCards = gameState.numCards - 1
-				} else {
-					//find max fp of players.fp
-					const maxFP = Math.max(
-						...gameState.players.map((player) => player.fp)
-					)
-					//find index of player with maxfp
-					const maxFPIndex = gameState.players.findIndex(
-						(player) => player.fp === maxFP
-					)
-					alert(
-						gameState.players[maxFPIndex].name +
-							'_Won with_' +
-							maxFP +
-							'-Points!'
-					)
-				}
-				//make all player point 0
-				updatedPlayers.forEach((player) => {
-					player.target = null
-					player.points = 0
-				})
 				let MasterCardPlayer = null
 				let maxTarget = -Infinity // Initialize maxTarget to a very low value
 
@@ -262,7 +225,6 @@ export const Deck = () => {
 					players: updatedPlayers,
 					round: gameState.round,
 					masterSuit: null,
-					numCards: gameState.numCards,
 				}
 				sendMessage(action)
 			} else {
@@ -286,9 +248,18 @@ export const Deck = () => {
 					players: updatedPlayers,
 					round: gameState.round,
 					masterSuit: gameState.masterSuit,
-					numCards: gameState.numCards,
 				}
 				sendMessage(action)
+			}
+			if (gameState.totalRounds < gameState.round) {
+				//fine player with max points
+				const maxPoints = Math.max(
+					...gameState.players.map((p) => p.points)
+				)
+				const winner = gameState.players.find(
+					(player) => player.points === maxPoints
+				)
+				alert(`${winner.name}  _ Won. Restart the Server`)
 			}
 		}
 	}
@@ -305,7 +276,7 @@ export const Deck = () => {
 		if (
 			gameState &&
 			playerIndex === gameState.masterCardplayer &&
-			gameState.masterSuit
+			!gameState.masterSuit
 		) {
 			const chooseMasterSuitAndUpdatePlayer = (suit) => {
 				chooseMasterSuit(suit)
@@ -455,6 +426,7 @@ export const Deck = () => {
 								</button>
 							)}
 							<div className="mt-3">Round: {gameState.round}</div>
+
 							{masterCard && (
 								<div style={{ margin: '5px' }}>
 									<Card
@@ -463,14 +435,15 @@ export const Deck = () => {
 									/>
 								</div>
 							)}
-							<div className="mt-3">
-								<h2>Scoreboard</h2>
-							</div>
-							{/* <div className="row">
+							<div className="row">
 								<div className="mt-3">
 									{renderMasterSuitSelection()}
 								</div>
-							</div> */}
+							</div>
+							<div className="mt-3">
+								<h2>Scoreboard</h2>
+							</div>
+
 							<div>
 								{gameState.players.map((player, index) => (
 									<p
@@ -482,16 +455,12 @@ export const Deck = () => {
 												: ''
 										}`}
 									>
-										{player.name} - CP: {player.points} -
-										Points: {player.fp} - Target :{' '}
-										{player.target}
+										{player.name} - Points: {player.points}{' '}
+										- Target : {player.target}
 									</p>
 								))}
 							</div>
-
 							{renderTargetSetting()}
-
-							{/* Display the winner */}
 						</div>
 					</div>
 				</div>

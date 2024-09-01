@@ -4,16 +4,16 @@ const wss = new WebSocket.Server({ port: PORT })
 
 let gameState = {
 	players: [
-		{ name: 'P1', hand: [], points: 0, target: 2 },
-		{ name: 'P2', hand: [], points: 0, target: 3 },
-		{ name: 'P3', hand: [], points: 0, target: 5 },
+		{ name: 'P1', hand: [], points: 0, fp: 0, target: null },
+		{ name: 'P2', hand: [], points: 0, fp: 0, target: null },
+		{ name: 'P3', hand: [], points: 0, fp: 0, target: null },
 	],
 	masterCardplayer: 0,
 	board: [],
 	round: 1,
 	firstCard: null,
 	currentPlayerIndex: 2,
-	masterSuit: null,
+	masterSuit: '♠',
 	totalRounds: null,
 	numCards: null,
 }
@@ -46,35 +46,13 @@ wss.on('connection', function connection(ws) {
 function setupGame(config, ws) {
 	const { numPlayers, numRounds, numCards, playerNames } = config
 
-	const calculateTargets = (numPlayers, numCards) => {
-		const totalPairs = numCards / numPlayers
-		const targets = []
-
-		// Example logic for assigning targets based on number of players
-		if (numPlayers === 3) {
-			targets.push(2, 3, 5)
-		} else if (numPlayers === 5) {
-			targets.push(1, 2, 1, 1, 1)
-		} else {
-			// Handle other cases if needed
-			// Default to some reasonable targets
-			for (let i = 0; i < numPlayers; i++) {
-				targets.push(3) // Default to 3 for each player
-			}
-		}
-
-		return targets
-	}
-
-	// Calculate targets based on number of players and total cards
-	const targets = calculateTargets(numPlayers, numCards)
-
 	gameState = {
 		players: playerNames.map((name, index) => ({
 			name,
 			hand: [],
 			points: 0,
-			target: targets[index],
+			fp: 0,
+			target: null,
 		})),
 		masterCardplayer: numPlayers - 1,
 		board: [],
@@ -87,12 +65,20 @@ function setupGame(config, ws) {
 	}
 	const playerGameState = { ...gameState, playerIndex: 0 }
 	ws.send(JSON.stringify(playerGameState))
+	const action = {
+		action: 'setTargets',
+	}
+
+	broadcastGameState(action)
 }
 
 function updateGameState(data) {
 	// console.log('****ACTION LOGS*****', data);
 	if (data.action === 'dealCards') {
 		dealCards()
+	}
+	if (data.action === 'setTarget') {
+		setPlayerTarget(data.playerIndex, data.target)
 	}
 	if (data.action === 'playCard') {
 		playCard(data.currentPlayerIndex, data.cardIndex, data.card)
@@ -105,8 +91,27 @@ function updateGameState(data) {
 			data.currentPlayerIndex,
 			data.players,
 			data.masterCardplayer,
-			data.round
+			data.round,
+			data.numCards
 		)
+	}
+}
+
+function setPlayerTarget(playerIndex, target) {
+	if (gameState.players[playerIndex]) {
+		gameState.players[playerIndex].target = target
+	}
+
+	// Check if all players have set their targets
+	const allTargetsSet = gameState.players.every(
+		(player) => player.target !== null
+	)
+
+	if (allTargetsSet) {
+		// Proceed with game setup or start
+		broadcastGameState({ action: 'gameSetupComplete' })
+	} else {
+		broadcastGameState({ action: 'waitingForTargets' })
 	}
 }
 
@@ -140,11 +145,6 @@ function dealCards() {
 		)
 	})
 
-	// gameState.players.forEach((player, index) => {
-	// 	gameState.players[index].hand = deck.slice(index * 3, (index + 1) * 3)
-	// })
-
-	// Notify the clients to decide the master suit
 	const action = {
 		action: 'chooseMasterSuit',
 	}
@@ -195,7 +195,8 @@ function calculatePointsAndResetBoard(
 	currentPlayerIndex,
 	players,
 	masterCardplayer,
-	round
+	round,
+	numCards
 ) {
 	gameState.players = players
 	gameState.currentPlayerIndex = currentPlayerIndex
@@ -203,7 +204,7 @@ function calculatePointsAndResetBoard(
 	gameState.board = []
 	gameState.firstCard = null
 	gameState.round = round
-
+	gameState.numCards = numCards
 	broadcastGameState()
 }
 

@@ -6,7 +6,7 @@ import { Card } from './Card'
 export const Setup = ({ onStartGame }) => {
 	const [numPlayers, setNumPlayers] = useState(3)
 	const [numRounds, setNumRounds] = useState(1)
-	const [numCards, setNumCards] = useState(3						)
+	const [numCards, setNumCards] = useState(3)
 	const [playerNames, setPlayerNames] = useState([
 		'Player 1',
 		'Player 2',
