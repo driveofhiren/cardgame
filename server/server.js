@@ -3,11 +3,7 @@ const PORT = 8080
 const wss = new WebSocket.Server({ port: PORT })
 
 let gameState = {
-	players: [
-		{ name: 'P1', hand: [], points: 0, fp: 0, target: null },
-		{ name: 'P2', hand: [], points: 0, fp: 0, target: null },
-		{ name: 'P3', hand: [], points: 0, fp: 0, target: null },
-	],
+	players: [{ name: 'Host', hand: [], points: 0, fp: 0, target: null }],
 	masterCardplayer: 0,
 	board: [],
 	round: 1,
@@ -19,15 +15,30 @@ let gameState = {
 }
 let nextClientId = 1 // Counter for assigning unique client IDs
 let clients = {}
+let waitingQueue = []
 
 wss.on('connection', function connection(ws) {
+	// Check if the game is full
+	if (Object.keys(clients).length >= gameState.players.length) {
+		waitingQueue.push(ws)
+		console.log('Game is full, client added to waiting queue')
+		ws.send(
+			JSON.stringify({
+				action: 'error',
+				message: 'Game is full. You are added to the waiting queue.',
+			})
+		)
+		return
+	}
+
 	const clientId = nextClientId++
-	const playerName = gameState.players[clientId - 1].name // Assign player name based on client ID
+	const playerName =
+		gameState.players[clientId - 1]?.name || `Player${clientId}`
 	console.log('New client connected ' + clientId + ' with name ' + playerName)
-	// Send gameState to new client along with the respective player's hand and assigned player index
+
 	const playerGameState = {
 		...gameState,
-		playerIndex: clientId - 1, // Assign player index to send to the client
+		playerIndex: clientId - 1,
 	}
 	ws.send(JSON.stringify(playerGameState))
 
@@ -38,10 +49,39 @@ wss.on('connection', function connection(ws) {
 		if (data.action === 'setup') {
 			setupGame(data.config, ws)
 			console.log('called')
-		} else updateGameState(data)
+		} else {
+			updateGameState(data)
+		}
+	})
+
+	ws.on('close', function () {
+		console.log('Client disconnected ' + clientId)
+		delete clients[clientId]
+
+		// Handle waiting queue
+		if (waitingQueue.length > 0) {
+			const nextWs = waitingQueue.shift()
+			const newClientId = nextClientId++
+			const newPlayerName =
+				gameState.players[newClientId - 1]?.name ||
+				`Player${newClientId}`
+			console.log(
+				'Connecting next client from queue with ID ' +
+					newClientId +
+					' and name ' +
+					newPlayerName
+			)
+
+			const newPlayerGameState = {
+				...gameState,
+				playerIndex: newClientId - 1,
+			}
+			nextWs.send(JSON.stringify(newPlayerGameState))
+
+			clients[newClientId] = nextWs
+		}
 	})
 })
-
 //set up this function for different games.
 function setupGame(config, ws) {
 	const { numPlayers, numRounds, numCards, playerNames } = config
@@ -211,7 +251,6 @@ function calculatePointsAndResetBoard(
 function broadcastGameState(action) {
 	wss.clients.forEach(function each(client) {
 		if (client.readyState === WebSocket.OPEN) {
-			console.log(gameState)
 			const message = action ? { ...gameState, ...action } : gameState
 			client.send(JSON.stringify(message))
 		}

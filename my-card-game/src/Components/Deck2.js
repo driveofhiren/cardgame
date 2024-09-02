@@ -8,7 +8,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 
 const client = new W3CWebSocket('ws://192.168.2.81:8080')
 
-export const Deck = () => {
+export const Deck2 = () => {
 	const [gameState, setGameState] = useState(null)
 	const [playerIndex, setPlayerIndex] = useState(-1)
 	const [target, setTarget] = useState('')

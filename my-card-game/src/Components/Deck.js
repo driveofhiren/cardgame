@@ -25,7 +25,6 @@ export const Deck = () => {
 	useEffect(() => {
 		client.onmessage = (message) => {
 			const data = JSON.parse(message.data)
-			console.log('Received action:', data)
 			if (data.totalRounds) {
 				setGameState(data)
 			}
@@ -363,7 +362,6 @@ export const Deck = () => {
 		return (
 			<div className="board-container">
 				<div className="board">
-					{console.log(gameState)}
 					{gameState.board &&
 						gameState.board.length > 0 &&
 						gameState.board.map((play, index) => (
