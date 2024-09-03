@@ -1,6 +1,9 @@
 const WebSocket = require('ws')
 const PORT = 8080
-const wss = new WebSocket.Server({ port: PORT })
+
+const app = express()
+const server = http.createServer(app)
+const wss = new WebSocket.Server({ server })
 
 let gameState = {
 	players: [{ name: 'Host', hand: [], points: 0, fp: 0, target: null }],
@@ -15,6 +18,10 @@ let gameState = {
 }
 let nextClientId = 1 // Counter for assigning unique client IDs
 let clients = {}
+
+app.get('/', (req, res) => {
+	res.send('WebSocket server is running!')
+})
 
 wss.on('connection', function connection(ws) {
 	// Check if the game is full
