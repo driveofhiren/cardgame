@@ -244,20 +244,24 @@ export const Deck = () => {
 					player.target = null
 					player.points = 0
 				})
-				let MasterCardPlayer = null
-				let maxTarget = -Infinity // Initialize maxTarget to a very low value
 
-				updatedPlayers.forEach((player, index) => {
-					if (player.target > maxTarget) {
-						maxTarget = player.target
-						MasterCardPlayer = index
-					}
-				})
+				//logic for deciding mastercard based on max target
+				// let MasterCardPlayer = null
+				// let maxTarget = -Infinity // Initialize maxTarget to a very low value
+
+				// updatedPlayers.forEach((player, index) => {
+				// 	if (player.target > maxTarget) {
+				// 		maxTarget = player.target
+				// 		MasterCardPlayer = index
+				// 	}
+				// })
+				gameState.currentPlayerIndex =
+					(gameState.round - 1) % gameState.players.length
 
 				const action = {
 					action: 'calculatePointsAndResetBoard',
-					masterCardplayer: MasterCardPlayer,
-					currentPlayerIndex: MasterCardPlayer,
+					masterCardplayer: null,
+					currentPlayerIndex: gameState.currentPlayerIndex,
 					players: updatedPlayers,
 					round: gameState.round,
 					masterSuit: null,
@@ -488,8 +492,6 @@ export const Deck = () => {
 							</div>
 
 							{renderTargetSetting()}
-
-							{/* Display the winner */}
 						</div>
 					</div>
 				</div>

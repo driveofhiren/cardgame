@@ -8,24 +8,22 @@ let gameState = {
 	board: [],
 	round: 1,
 	firstCard: null,
-	currentPlayerIndex: 2,
+	currentPlayerIndex: 0,
 	masterSuit: '♠',
 	totalRounds: null,
 	numCards: null,
 }
 let nextClientId = 1 // Counter for assigning unique client IDs
 let clients = {}
-let waitingQueue = []
 
 wss.on('connection', function connection(ws) {
 	// Check if the game is full
 	if (Object.keys(clients).length >= gameState.players.length) {
-		waitingQueue.push(ws)
-		console.log('Game is full, client added to waiting queue')
+		console.log('Game is full')
 		ws.send(
 			JSON.stringify({
 				action: 'error',
-				message: 'Game is full. You are added to the waiting queue.',
+				message: 'Game is full!',
 			})
 		)
 		return
@@ -34,7 +32,7 @@ wss.on('connection', function connection(ws) {
 	const clientId = nextClientId++
 	const playerName =
 		gameState.players[clientId - 1]?.name || `Player${clientId}`
-	console.log('New client connected ' + clientId + ' with name ' + playerName)
+	console.log(playerName + ' Connected')
 
 	const playerGameState = {
 		...gameState,
@@ -98,7 +96,7 @@ function setupGame(config, ws) {
 		board: [],
 		round: 1,
 		firstCard: null,
-		currentPlayerIndex: numPlayers - 1,
+		currentPlayerIndex: 0,
 		masterSuit: null,
 		totalRounds: numRounds,
 		numCards: numCards,
@@ -195,6 +193,8 @@ function dealCards() {
 function playCard(currentPlayerIndex, cardIndex, card) {
 	const currentPlayer = gameState.players[currentPlayerIndex]
 
+	//print gamestate console
+
 	if (gameState.firstCard === null) {
 		gameState.firstCard = card
 	}
@@ -209,12 +209,15 @@ function playCard(currentPlayerIndex, cardIndex, card) {
 		return player
 	})
 
-	// Update currentPlayerIndex after updating the player's hand
-	gameState.currentPlayerIndex =
-		(gameState.currentPlayerIndex + 1) % gameState.players.length
-
 	// Push the card onto the board after updating currentPlayerIndex
 	gameState.board.push({ currentPlayerIndex, cardIndex, card })
+
+	// Update currentPlayerIndex only if allplayerhands are not empty
+
+	if (gameState.board.length < 3) {
+		gameState.currentPlayerIndex =
+			(gameState.currentPlayerIndex + 1) % gameState.players.length
+	}
 
 	if (updatedPlayers.every((player) => player.hand.length === 0)) {
 		gameState.round++
@@ -238,6 +241,8 @@ function calculatePointsAndResetBoard(
 	round,
 	numCards
 ) {
+	console.log(gameState.board)
+	console.log(gameState.players)
 	gameState.players = players
 	gameState.currentPlayerIndex = currentPlayerIndex
 	gameState.masterCardplayer = masterCardplayer
@@ -245,6 +250,7 @@ function calculatePointsAndResetBoard(
 	gameState.firstCard = null
 	gameState.round = round
 	gameState.numCards = numCards
+
 	broadcastGameState()
 }
 
