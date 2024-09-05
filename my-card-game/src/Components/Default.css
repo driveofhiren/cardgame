@@ -88,6 +88,9 @@ body {
 	align-items: center;
 	margin-top: 35px;
 }
+a {
+	text-decoration: none !important;
+}
 
 /* Button Styles */
 button {
@@ -192,7 +195,7 @@ button:hover {
 
 .stat-value {
 	font-weight: bold;
-	color: #ff5f6d;
+	color: #5ffffa;
 }
 
 /* Setup Container */

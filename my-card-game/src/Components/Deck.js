@@ -499,17 +499,17 @@ export const Deck = () => {
 				<div className="hand">
 					{playerIndex === index ? (
 						player.hand.map((card, cardIndex) => (
-							<button
+							<a
 								key={card.id}
 								className="card-button"
 								onClick={() => playCard(cardIndex)}
 								disabled={!canPlayCard(card, index)}
 								style={{
-									opacity: canPlayCard(card, index) ? 1 : 0.3,
+									opacity: canPlayCard(card, index) ? 1 : 0.5,
 								}}
 							>
 								<Card suit={card.suit} value={card.value} />
-							</button>
+							</a>
 						))
 					) : (
 						<div>
@@ -560,6 +560,7 @@ export const Deck = () => {
 							{masterCard && (
 								<div style={{ margin: '5px' }}>
 									<Card
+										value={null}
 										suit={masterCard.suit}
 										className="card-small"
 									/>
@@ -587,8 +588,11 @@ export const Deck = () => {
 										<div className="player-info">
 											<h3
 												className={`player-name ${
+													player.points +
+														player.hand.length <
+														player.target ||
 													player.points >
-													player.target
+														player.target
 														? 'player-name-lost'
 														: ''
 												}`}
