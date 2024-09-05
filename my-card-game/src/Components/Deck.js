@@ -106,22 +106,74 @@ export const Deck = () => {
 	}
 
 	const renderTargetSetting = () => {
-		if (gameState && !gameState.players[playerIndex].target) {
-			return (
-				<div>
-					<h3>Set Your Target</h3>
-					<input
-						type="number"
-						value={target}
-						onChange={(e) => setTarget(e.target.value)}
-						min="1"
-						max="10"
-					/>
-					<button onClick={() => setPlayerTarget(Number(target))}>
-						Set Target
-					</button>
-				</div>
-			)
+		if (gameState) {
+			const currentPlayer =
+				gameState.players[gameState.currentPlayerIndex]
+			const totalCards = gameState.numCards // Assuming total number of cards is available in gameState
+
+			// Calculate sum of all targets set so far (excluding current player)
+			const sumOfTargets = gameState.players
+				.filter((player) => player.target !== null) // Only include players who have already set a target
+				.reduce((sum, player) => sum + player.target, 0)
+
+			// Find out how many players have set their targets so far
+			const playersWhoSetTarget = gameState.players.filter(
+				(player) => player.target !== null
+			).length
+
+			// Determine if the current player is the last one to set the target for this round
+			const isLastPlayerToSetTarget =
+				playersWhoSetTarget === gameState.players.length - 1
+
+			const remainingTarget = totalCards - sumOfTargets
+
+			// Show the target setting UI if the current player's target is not set yet
+			if (
+				playerIndex === gameState.currentPlayerIndex &&
+				currentPlayer.target === null &&
+				gameState.players[playerIndex].hand.length !== 0
+			) {
+				const handleSetTarget = () => {
+					const numericTarget = Number(target)
+
+					// Validation for the player setting the final target
+					if (
+						isLastPlayerToSetTarget &&
+						numericTarget === remainingTarget
+					) {
+						alert(
+							`Invalid target! The sum of all targets cannot be equal to ${totalCards}. Please choose a different target.`
+						)
+					} else {
+						setPlayerTarget(numericTarget)
+					}
+				}
+
+				return (
+					<div className="text-center mt-4">
+						<h5 className="text-warning mb-3">
+							{currentPlayer.name}, Set Your Target:
+						</h5>
+						<div className="d-inline-flex align-items-center">
+							<input
+								type="number"
+								value={target}
+								onChange={(e) => setTarget(e.target.value)}
+								min="0"
+								max="10"
+								className="form-control form-control-lg me-2"
+								style={{ width: '100px' }} // Bootstrap does not have a direct width control for small inputs
+							/>
+							<button
+								onClick={handleSetTarget}
+								className="btn btn-lg btn-danger"
+							>
+								Set Target
+							</button>
+						</div>
+					</div>
+				)
+			}
 		}
 		return null
 	}
@@ -169,36 +221,57 @@ export const Deck = () => {
 
 	const calculatePointsAndResetBoard = () => {
 		const masterSuit = gameState.masterSuit
+
 		const winningCard = gameState.board.reduce((max, card) => {
-			if (card.card.suit === masterSuit && max.suit !== masterSuit) {
+			// Extract card values for easier comparison
+			const cardValueOrder = [
+				'2',
+				'3',
+				'4',
+				'5',
+				'6',
+				'7',
+				'8',
+				'9',
+				'10',
+				'J',
+				'Q',
+				'K',
+				'A',
+			]
+			const getValueIndex = (value) => cardValueOrder.indexOf(value)
+
+			// Check if the card's suit matches either masterSuit or the suit of the first card
+			const isMasterSuit = card.card.suit === masterSuit
+			const isInitialSuit =
+				card.card.suit === gameState.board[0].card.suit
+			const isMaxSuitMaster = max.suit === masterSuit
+			const isMaxSuitInitial = max.suit === gameState.board[0].card.suit
+
+			// Compare based on suit priority
+			if (
+				isMasterSuit &&
+				(!isMaxSuitMaster || (isMaxSuitInitial && !isInitialSuit))
+			) {
+				// Current card is masterSuit and max card is not, or max card is of initial suit only
+				return card.card
+			} else if (isInitialSuit && !isMaxSuitMaster && !isMaxSuitInitial) {
+				// Current card is of initial suit and max card is neither masterSuit nor initial suit
 				return card.card
 			} else if (
-				card.card.suit !== masterSuit &&
-				max.suit === masterSuit
+				isMasterSuit === isMaxSuitMaster &&
+				isInitialSuit === isMaxSuitInitial
 			) {
-				return max
+				// Both cards are of the same suit priority, compare their values
+				if (getValueIndex(card.card.value) > getValueIndex(max.value)) {
+					return card.card
+				}
 			}
-			if (
-				card.card.value === 'A' ||
-				(card.card.value === 'K' && max.value !== 'A') ||
-				(card.card.value === 'Q' &&
-					max.value !== 'A' &&
-					max.value !== 'K') ||
-				(card.card.value === 'J' &&
-					max.value !== 'A' &&
-					max.value !== 'K' &&
-					max.value !== 'Q') ||
-				(parseInt(card.card.value) > parseInt(max.value) &&
-					max.value !== 'A' &&
-					max.value !== 'K' &&
-					max.value !== 'Q' &&
-					max.value !== 'J')
-			) {
-				return card.card
-			}
+
 			return max
 		}, gameState.board[0].card)
 
+		console.log('winning Card_' + winningCard.suit + winningCard.value)
 		const winningPlayerIndex = gameState.board.find(
 			(card) => card.card === winningCard
 		).currentPlayerIndex
@@ -220,24 +293,47 @@ export const Deck = () => {
 						player.fp = player.fp + player.target + 10
 				})
 
+				const ranks = {}
+				const sortedPlayers = updatedPlayers
+					.slice()
+					.sort((a, b) => b.fp - a.fp)
+				let currentRank = 1
+
+				sortedPlayers.forEach((player) => {
+					const fp = player.fp
+					if (!ranks[fp]) {
+						ranks[fp] = currentRank
+						currentRank++
+					}
+				})
+
+				updatedPlayers.forEach((player) => {
+					player.rank = ranks[player.fp]
+				})
+
 				if (gameState.numCards > 1) {
 					//decrement it
 					gameState.numCards = gameState.numCards - 1
 				} else {
-					//find max fp of players.fp
-					const maxFP = Math.max(
-						...gameState.players.map((player) => player.fp)
+					//decide winners with rank 1
+					const winners = updatedPlayers.filter(
+						(player) => player.rank === 1
 					)
-					//find index of player with maxfp
-					const maxFPIndex = gameState.players.findIndex(
-						(player) => player.fp === maxFP
-					)
-					alert(
-						gameState.players[maxFPIndex].name +
-							'_Won with_' +
-							maxFP +
-							'-Points!'
-					)
+					//give alert print message with winners name and point if they are many
+					if (winners.length > 1) {
+						const winnersNames = winners
+							.map((winner) => winner.name)
+							.join(', ')
+
+						alert(
+							`It's a tie! The winners are ${winnersNames} with ${winners[0].fp}`
+						)
+					} else {
+						const winner = winners[0]
+						alert(
+							`The winner is ${winner.name} with ${winner.fp} points!`
+						)
+					}
 				}
 				//make all player point 0
 				updatedPlayers.forEach((player) => {
@@ -371,15 +467,19 @@ export const Deck = () => {
 						gameState.board.map((play, index) => (
 							<div
 								key={index}
+								className="card-container"
 								style={{
-									position: 'absolute',
-									left: `${index * 50}px`,
-									top: '50%',
-									transform: 'translateY(-50%)',
+									left: `${index * 60}px`,
 									zIndex: index,
 								}}
-								className="card-container"
 							>
+								<div className="player-name-small">
+									{
+										gameState.players[
+											play.currentPlayerIndex
+										].name
+									}
+								</div>
 								<Card
 									suit={play.card.suit}
 									value={play.card.value}
@@ -473,21 +573,64 @@ export const Deck = () => {
 									{renderMasterSuitSelection()}
 								</div>
 							</div> */}
-							<div>
+							<div className="scoreboard">
 								{gameState.players.map((player, index) => (
-									<p
+									<div
 										key={index}
-										className={`${
+										className={`scoreboard-item ${
 											index ===
 											gameState.currentPlayerIndex
 												? 'current-player'
 												: ''
 										}`}
 									>
-										{player.name} - CP: {player.points} -
-										Points: {player.fp} - Target :{' '}
-										{player.target}
-									</p>
+										<div className="player-info">
+											<h3
+												className={`player-name ${
+													player.points >
+													player.target
+														? 'player-name-lost'
+														: ''
+												}`}
+											>
+												{player.name}
+											</h3>
+											<div className="player-stats">
+												<div className="stat">
+													<span className="stat-label">
+														CP:
+													</span>
+													<span className="stat-value">
+														{player.points}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Points:
+													</span>
+													<span className="stat-value">
+														{player.fp}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Target:
+													</span>
+													<span className="stat-value">
+														{player.target}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Rank:
+													</span>
+													<span className="stat-value">
+														{player.rank}
+													</span>
+												</div>
+											</div>
+										</div>
+									</div>
 								))}
 							</div>
 

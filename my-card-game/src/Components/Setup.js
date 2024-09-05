@@ -34,7 +34,7 @@ export const Setup = ({ onStartGame }) => {
 
 	return (
 		<div className="setup-container">
-			<form onSubmit={handleSubmit}>
+			<form className="form-container" onSubmit={handleSubmit}>
 				<div className="form-group">
 					<label>Number of Players:</label>
 					<input

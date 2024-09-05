@@ -1,143 +1,302 @@
+/* General Styles */
+body {
+	font-family: 'Poppins', Arial, sans-serif; /* Switched to a more modern font */
+	background: linear-gradient(
+		135deg,
+		#1d1e20,
+		#000000
+	); /* Sleek black gradient background */
+	color: #ffffff;
+}
+
+/* Board Container */
 .board-container {
-	display: flex;
-	justify-content: center; /* Center the board horizontally */
-	margin-top: 20px; /* Adjust margin as needed */
-}
-.hand {
-	display: flex;
-	justify-content: center; /* Center the cards horizontally */
-	gap: 5px;
+	border-radius: 15px;
+	margin: 30px auto;
+	width: 100%;
+
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+	position: relative;
 }
 
+/* Board */
 .board {
-	margin-top: 50px;
-	background-color: #c9a3ff;
-	border-radius: 10px;
-	padding: 70px 90px 70px 90px;
+	margin-top: 60px;
+	background: radial-gradient(circle at top left, #d9b3ff, #c9a3ff, #b393ff);
+	border-radius: 15px;
+	padding: 120px 160px;
 	display: flex;
-
-	position: relative; /* Ensure relative positioning */
+	position: relative;
+	box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
 }
+
+/* Card Container */
 .card-container {
 	position: absolute;
-	left: 20px; /* Adjust spacing from the left */
-	top: 50%; /* Center vertically */
+	left: 25px;
+	top: 50%;
 	transform: translateY(-50%);
-	margin-left: 5px;
+	margin-left: 15px;
 }
+
+/* Grid Container */
 .grid-container {
 	display: grid;
-	grid-template-columns: 8fr 2fr; /* 80/20 split */
-	grid-gap: 20px; /* Adjust the gap between the columns */
+	grid-template-columns: 3fr 1fr;
+	gap: 25px;
 }
+.form-container {
+	font-size: small;
+	display: grid;
+	grid-template-columns: 3fr 3fr;
+	gap: 15px;
+}
+
+/* Player Container */
 .player-container {
 	display: flex;
+	color: #f2d8ff;
 	flex-direction: column;
-	align-items: center; /* Align items in the center horizontally */
+	align-items: center;
+
+	border-radius: 0px;
+	padding: 15px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* Hand Styles */
 .hand {
 	display: flex;
-	justify-content: center; /* Center the cards horizontally */
-	gap: 5px; /* Add some space between the cards */
+	justify-content: center;
+	gap: 12px; /* Increased gap for better spacing */
 }
 
+/* Players Hand Column */
 .players-hand-column {
-	/* Additional styling for the left column */
 	grid-column: 1;
 	display: flex;
 	flex-direction: column;
-	align-items: center; /* This column will occupy the first grid track */
+	align-items: center;
 }
 
+/* Other Things Column */
 .other-things-column {
+	color: rgb(149, 245, 249);
+	grid-column: 2;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	grid-column: 2;
-	margin-top: 30px; /* This column will occupy the second grid track */
+	margin-top: 35px;
 }
 
-.board-row {
+/* Button Styles */
+button {
+	background-color: #ff7582;
+	background-image: linear-gradient(315deg, #ff7582 0%, #ffbe85 74%);
+	color: rgb(11, 11, 7) !important;
+	padding: 12px 24px;
+	font-size: 1.2em;
+	font-weight: bold;
+	border-radius: 50px;
+	cursor: pointer;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+	transition: background 0.3s ease, transform 0.2s;
+	margin: 12px 0;
+	border: none;
+}
+
+button:hover {
+	transform: translateY(-5px) scale(1.05); /* Add some bounce on hover */
+	/* background-image: linear-gradient(315deg, #ffb199 0%, #ff0844 74%); */
+}
+
+/* Scoreboard */
+.scoreboard {
 	display: flex;
-	justify-content: center;
+	flex-direction: row;
+	gap: 25px;
+	background-image: linear-gradient(315deg, #758cff 0%, #9e39b7 74%);
+	padding: 20px;
+	border-radius: 12px;
+	max-width: 650px;
+	margin: 0 auto;
+	box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+	border: 1px solid #555;
+}
+
+.scoreboard-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 20px;
+	background: #2c2c2c;
+	border-radius: 10px;
+	transition: background-color 0.3s ease;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.scoreboard-item:hover {
+	background-color: #3b3b3b;
+}
+
+/* Current Player Highlight */
+.current-player {
+	background-color: #267726;
+	color: #ffffff;
+	box-shadow: 0 4px 10px rgba(0, 255, 0, 0.3);
+}
+.player-info {
+	display: flex;
+	flex-direction: column;
 	gap: 10px;
 }
 
-body {
-	font-family: Arial, sans-serif;
-	color: rgb(255, 255, 255) !important;
-	background-color: #1a242f !important; /* Light blue-grey background */
-}
-.current-player {
-	background-color: rgba(60, 255, 0, 0.378);
-	padding: 5px;
-	border-radius: 5px;
+/* Player Name */
+.player-name {
+	font-size: 1.1em;
+	color: #ffffff;
+	margin-bottom: 8px;
+	font-weight: bold;
+	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.deal-button {
-	background-color: #4caf50;
+.player-name-small {
+	font-size: 0.85rem;
+	position: absolute;
+	bottom: -40px;
+	left: 50%;
+	transform: translateX(-50%);
+	background-color: rgba(0, 0, 0, 0.8);
 	color: white;
-	padding: 10px 20px;
-	border: none;
-	border-radius: 5px;
-	margin-bottom: 20px;
-	cursor: pointer;
-	font-size: 16px;
-	transition: background-color 0.3s ease;
-}
-#players-hand {
+	padding: 8px;
+	border-radius: 8px;
+	text-align: center;
 	width: 90%;
 }
 
-/* Setup.css */
+.player-stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20px;
+}
+
+.stat {
+	display: flex;
+	gap: 8px;
+}
+
+.stat-label {
+	font-weight: bold;
+	color: #cccccc;
+}
+
+.stat-value {
+	font-weight: bold;
+	color: #ff5f6d;
+}
+
+/* Setup Container */
 .setup-container {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding: 20px;
-	border: 1px solid #ccc;
-	border-radius: 10px;
-	max-width: 400px;
-	margin: 0 auto;
-	background-color: #f9f9f9;
+	padding: 30px;
+	border-radius: 15px;
+	max-width: 450px;
+	margin: 60px auto;
+	background: linear-gradient(to bottom, #6a254c, #f7f7);
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
 .form-group {
-	margin-bottom: 15px;
+	margin-bottom: 20px;
 	width: 100%;
 }
 
 .form-group label {
 	display: block;
-	margin-bottom: 5px;
+	margin-bottom: 8px;
+	font-size: 1.2em;
+	font-weight: 600;
+	color: #ffffff;
 }
 
-.form-group input {
+.form-group input[type='number'],
+.form-group input[type='text'] {
 	width: 100%;
-	padding: 8px;
+	padding: 12px;
 	box-sizing: border-box;
+	border-radius: 8px;
+	border: 1px solid #555;
+	font-size: 1.1em;
+	margin-top: 5px;
+	background-color: aliceblue;
+	color: #000000;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-button {
-	padding: 10px 20px;
-	background-color: #007bff;
+input[type='number']:focus,
+input[type='text']:focus {
+	outline: none;
+	border: 2px solid #00f3ff;
+	background-color: aliceblue;
+}
+
+/* General Button Styles */
+button[type='submit'] {
+	background-color: #ff7582;
+	background-image: linear-gradient(315deg, #ff7582 0%, #ffc371 74%);
 	color: white;
-	border: none;
-	border-radius: 5px;
+	padding: 12px 24px;
+	font-size: 1.2em;
+	font-weight: bold;
+	border-radius: 50px;
 	cursor: pointer;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+	transition: background 0.3s ease, transform 0.2s;
 }
 
-button:hover {
-	background-color: #0056b3;
-}
-.setup-container {
-	color: black;
+button[type='submit']:hover {
+	transform: translateY(-5px) scale(1.05); /* Add some bounce */
+	background-image: linear-gradient(315deg, #ffb199 0%, #ff0844 74%);
 }
 
-.setup-container label,
-.setup-container input,
-.setup-container button {
-	color: black;
+/* Player Name Lost */
+.player-name-lost {
+	color: #ff3333 !important;
+	font-weight: bold;
+	animation: pulse 1.5s infinite; /* Pulsing animation for lost players */
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+	.setup-container {
+		padding: 20px;
+	}
+
+	input[type='number'],
+	input[type='text'] {
+		font-size: 1em;
+	}
+	button {
+		font-size: 1em;
+		padding: 8px 16px;
+	}
+	.board {
+		padding: 100px 80px;
+	}
 }

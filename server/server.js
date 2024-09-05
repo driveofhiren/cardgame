@@ -3,7 +3,9 @@ const PORT = 8080
 const wss = new WebSocket.Server({ port: PORT })
 
 let gameState = {
-	players: [{ name: 'Host', hand: [], points: 0, fp: 0, target: null }],
+	players: [
+		{ name: 'Host', hand: [], points: 0, fp: 0, target: null, rank: null },
+	],
 	masterCardplayer: 0,
 	board: [],
 	round: 1,
@@ -55,29 +57,6 @@ wss.on('connection', function connection(ws) {
 	ws.on('close', function () {
 		console.log('Client disconnected ' + clientId)
 		delete clients[clientId]
-
-		// Handle waiting queue
-		if (waitingQueue.length > 0) {
-			const nextWs = waitingQueue.shift()
-			const newClientId = nextClientId++
-			const newPlayerName =
-				gameState.players[newClientId - 1]?.name ||
-				`Player${newClientId}`
-			console.log(
-				'Connecting next client from queue with ID ' +
-					newClientId +
-					' and name ' +
-					newPlayerName
-			)
-
-			const newPlayerGameState = {
-				...gameState,
-				playerIndex: newClientId - 1,
-			}
-			nextWs.send(JSON.stringify(newPlayerGameState))
-
-			clients[newClientId] = nextWs
-		}
 	})
 })
 //set up this function for different games.
@@ -91,6 +70,7 @@ function setupGame(config, ws) {
 			points: 0,
 			fp: 0,
 			target: null,
+			rank: null,
 		})),
 		masterCardplayer: numPlayers - 1,
 		board: [],
@@ -139,13 +119,22 @@ function setPlayerTarget(playerIndex, target) {
 	if (gameState.players[playerIndex]) {
 		gameState.players[playerIndex].target = target
 	}
+	//condition to compare gamestate.numcards and sum of all player.target
 
+	console.log(playerIndex + '__' + gameState.players[playerIndex].target)
 	// Check if all players have set their targets
 	const allTargetsSet = gameState.players.every(
 		(player) => player.target !== null
 	)
+	console.log(gameState.currentPlayerIndex)
+	gameState.currentPlayerIndex =
+		(gameState.currentPlayerIndex + 1) % gameState.players.length
+	console.log('After_' + gameState.currentPlayerIndex)
 
 	if (allTargetsSet) {
+		//next player from the first target setter
+		gameState.currentPlayerIndex =
+			(gameState.currentPlayerIndex + 1) % gameState.players.length
 		// Proceed with game setup or start
 		broadcastGameState({ action: 'gameSetupComplete' })
 	} else {
@@ -193,8 +182,6 @@ function dealCards() {
 function playCard(currentPlayerIndex, cardIndex, card) {
 	const currentPlayer = gameState.players[currentPlayerIndex]
 
-	//print gamestate console
-
 	if (gameState.firstCard === null) {
 		gameState.firstCard = card
 	}
@@ -214,7 +201,7 @@ function playCard(currentPlayerIndex, cardIndex, card) {
 
 	// Update currentPlayerIndex only if allplayerhands are not empty
 
-	if (gameState.board.length < 3) {
+	if (gameState.board.length < gameState.players.length) {
 		gameState.currentPlayerIndex =
 			(gameState.currentPlayerIndex + 1) % gameState.players.length
 	}
