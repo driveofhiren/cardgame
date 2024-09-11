@@ -329,9 +329,8 @@ export const Deck = () => {
 							`It's a tie! The winners are ${winnersNames} with ${winners[0].fp}`
 						)
 					} else {
-						const winner = winners[0]
 						alert(
-							`The winner is ${winner.name} with ${winner.fp} points!`
+							`The winner is ${winners[0].name} with ${winners[0].fp} points!`
 						)
 					}
 				}
@@ -499,7 +498,7 @@ export const Deck = () => {
 				<div className="hand">
 					{playerIndex === index ? (
 						player.hand.map((card, cardIndex) => (
-							<a
+							<button
 								key={card.id}
 								className="card-button"
 								onClick={() => playCard(cardIndex)}
@@ -509,7 +508,7 @@ export const Deck = () => {
 								}}
 							>
 								<Card suit={card.suit} value={card.value} />
-							</a>
+							</button>
 						))
 					) : (
 						<div>

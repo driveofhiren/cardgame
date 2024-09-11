@@ -1,36 +1,31 @@
 /* General Styles */
 body {
-	font-family: 'Poppins', Arial, sans-serif; /* Switched to a more modern font */
-	background: linear-gradient(
-		135deg,
-		#1d1e20,
-		#000000
-	); /* Sleek black gradient background */
+	font-family: 'Poppins', Arial, sans-serif;
+	background: linear-gradient(135deg, #1d1e20, #000000);
 	color: #ffffff;
+	margin: 0;
+	padding: 0;
 }
 
-/* Board Container */
 .board-container {
 	border-radius: 15px;
 	margin: 30px auto;
-	width: 100%;
-
+	width: 90%;
+	max-width: 1200px; /* Ensures maximum width on large screens */
 	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 	position: relative;
 }
 
-/* Board */
 .board {
 	margin-top: 60px;
 	background: radial-gradient(circle at top left, #d9b3ff, #c9a3ff, #b393ff);
 	border-radius: 15px;
-	padding: 120px 160px;
+	padding: 120px 160px; /* Wide padding for desktop */
 	display: flex;
 	position: relative;
 	box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Card Container */
 .card-container {
 	position: absolute;
 	left: 25px;
@@ -39,39 +34,35 @@ body {
 	margin-left: 15px;
 }
 
-/* Grid Container */
 .grid-container {
 	display: grid;
-	grid-template-columns: 3fr 1fr;
+	grid-template-columns: 3fr 1fr; /* Two-column layout for desktop */
 	gap: 25px;
 }
+
 .form-container {
 	font-size: small;
 	display: grid;
-	grid-template-columns: 3fr 3fr;
+	grid-template-columns: 3fr 3fr; /* Two-column layout for desktop */
 	gap: 15px;
 }
 
-/* Player Container */
 .player-container {
 	display: flex;
 	color: #f2d8ff;
 	flex-direction: column;
 	align-items: center;
-
 	border-radius: 0px;
 	padding: 15px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Hand Styles */
 .hand {
 	display: flex;
 	justify-content: center;
-	gap: 12px; /* Increased gap for better spacing */
+	gap: 12px;
 }
 
-/* Players Hand Column */
 .players-hand-column {
 	grid-column: 1;
 	display: flex;
@@ -79,7 +70,6 @@ body {
 	align-items: center;
 }
 
-/* Other Things Column */
 .other-things-column {
 	color: rgb(149, 245, 249);
 	grid-column: 2;
@@ -88,11 +78,11 @@ body {
 	align-items: center;
 	margin-top: 35px;
 }
+
 a {
 	text-decoration: none !important;
 }
 
-/* Button Styles */
 button {
 	background-color: #ff7582;
 	background-image: linear-gradient(315deg, #ff7582 0%, #ffbe85 74%);
@@ -109,14 +99,12 @@ button {
 }
 
 button:hover {
-	transform: translateY(-5px) scale(1.05); /* Add some bounce on hover */
-	/* background-image: linear-gradient(315deg, #ffb199 0%, #ff0844 74%); */
+	transform: translateY(-5px) scale(1.05);
 }
 
-/* Scoreboard */
 .scoreboard {
 	display: flex;
-	flex-direction: row;
+	flex-direction: row; /* Row layout for desktop */
 	gap: 25px;
 	background-image: linear-gradient(315deg, #758cff 0%, #9e39b7 74%);
 	padding: 20px;
@@ -142,19 +130,18 @@ button:hover {
 	background-color: #3b3b3b;
 }
 
-/* Current Player Highlight */
 .current-player {
 	background-color: #267726;
 	color: #ffffff;
 	box-shadow: 0 4px 10px rgba(0, 255, 0, 0.3);
 }
+
 .player-info {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
 }
 
-/* Player Name */
 .player-name {
 	font-size: 1.1em;
 	color: #ffffff;
@@ -198,7 +185,6 @@ button:hover {
 	color: #5ffffa;
 }
 
-/* Setup Container */
 .setup-container {
 	display: flex;
 	flex-direction: column;
@@ -246,7 +232,6 @@ input[type='text']:focus {
 	background-color: aliceblue;
 }
 
-/* General Button Styles */
 button[type='submit'] {
 	background-color: #ff7582;
 	background-image: linear-gradient(315deg, #ff7582 0%, #ffc371 74%);
@@ -261,18 +246,16 @@ button[type='submit'] {
 }
 
 button[type='submit']:hover {
-	transform: translateY(-5px) scale(1.05); /* Add some bounce */
+	transform: translateY(-5px) scale(1.05);
 	background-image: linear-gradient(315deg, #ffb199 0%, #ff0844 74%);
 }
 
-/* Player Name Lost */
 .player-name-lost {
 	color: #ff3333 !important;
 	font-weight: bold;
-	animation: pulse 1.5s infinite; /* Pulsing animation for lost players */
+	animation: pulse 1.5s infinite;
 }
 
-/* Pulse Animation */
 @keyframes pulse {
 	0% {
 		transform: scale(1);
@@ -286,7 +269,27 @@ button[type='submit']:hover {
 }
 
 /* Responsive Styles */
-@media (max-width: 600px) {
+@media (max-width: 1200px) {
+	.board {
+		padding: 100px 80px;
+	}
+}
+
+@media (max-width: 900px) {
+	.grid-container {
+		grid-template-columns: 1fr; /* Switch to one-column layout for screens smaller than 900px */
+	}
+
+	.form-container {
+		grid-template-columns: 1fr; /* Switch to one-column layout for screens smaller than 900px */
+	}
+}
+
+@media (max-width: 768px) {
+	.board {
+		padding: 60px 40px;
+	}
+
 	.setup-container {
 		padding: 20px;
 	}
@@ -295,11 +298,53 @@ button[type='submit']:hover {
 	input[type='text'] {
 		font-size: 1em;
 	}
+
 	button {
 		font-size: 1em;
 		padding: 8px 16px;
 	}
+
+	.hand {
+		flex-direction: column;
+	}
+}
+
+@media (max-width: 600px) {
 	.board {
-		padding: 100px 80px;
+		padding: 40px 20px;
+	}
+
+	.player-container {
+		padding: 10px;
+	}
+
+	.scoreboard-item {
+		padding: 10px;
+	}
+
+	.form-group {
+		margin-bottom: 10px;
+	}
+
+	.form-group label {
+		font-size: 1em;
+	}
+
+	input[type='number'],
+	input[type='text'] {
+		font-size: 0.85em;
+	}
+
+	button {
+		font-size: 0.85em;
+		padding: 6px 12px;
+	}
+
+	.setup-container {
+		padding: 10px;
+	}
+
+	.hand {
+		flex-direction: column;
 	}
 }

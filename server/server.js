@@ -17,6 +17,7 @@ let gameState = {
 }
 let nextClientId = 1 // Counter for assigning unique client IDs
 let clients = {}
+const sessions = {}
 
 wss.on('connection', function connection(ws) {
 	// Check if the game is full
@@ -56,6 +57,7 @@ wss.on('connection', function connection(ws) {
 
 	ws.on('close', function () {
 		console.log('Client disconnected ' + clientId)
+		nextClientId--
 		delete clients[clientId]
 	})
 })
