@@ -15,7 +15,7 @@ let gameState = {
 	totalRounds: null,
 	numCards: null,
 }
-let nextClientId = 1 // Counter for assignggjing unique client IDs
+let nextClientId = 1 // Counter for pookjashiredj unique client IDs
 let clients = {}
 const sessions = {}
 
