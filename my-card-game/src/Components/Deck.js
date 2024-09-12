@@ -6,7 +6,9 @@ import { Setup } from './Setup'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-const client = new W3CWebSocket('ws://192.168.2.81:8080')
+const serverAddress = 'https://tartan-pond-catamaran.glitch.me'
+const client = new W3CWebSocket(serverAddress)
+// const client = new W3CWebSocket('ws://192.168.2.81:8080')
 
 export const Deck = () => {
 	const [gameState, setGameState] = useState(null)
@@ -329,9 +331,8 @@ export const Deck = () => {
 							`It's a tie! The winners are ${winnersNames} with ${winners[0].fp}`
 						)
 					} else {
-						const winner = winners[0]
 						alert(
-							`The winner is ${winner.name} with ${winner.fp} points!`
+							`The winner is ${winners[0].name} with ${winners[0].fp} points!`
 						)
 					}
 				}
@@ -499,7 +500,7 @@ export const Deck = () => {
 				<div className="hand">
 					{playerIndex === index ? (
 						player.hand.map((card, cardIndex) => (
-							<a
+							<button
 								key={card.id}
 								className="card-button"
 								onClick={() => playCard(cardIndex)}
@@ -509,7 +510,7 @@ export const Deck = () => {
 								}}
 							>
 								<Card suit={card.suit} value={card.value} />
-							</a>
+							</button>
 						))
 					) : (
 						<div>
