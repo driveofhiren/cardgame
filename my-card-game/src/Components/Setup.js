@@ -6,12 +6,8 @@ import { Card } from './Card'
 export const Setup = ({ onStartGame }) => {
 	const [numPlayers, setNumPlayers] = useState(3)
 	const [numRounds, setNumRounds] = useState(1)
-	const [numCards, setNumCards] = useState(3)
-	const [playerNames, setPlayerNames] = useState([
-		'Player 1',
-		'Player 2',
-		'Player 3',
-	])
+	const [numCards, setNumCards] = useState(numRounds)
+	const [playerNames, setPlayerNames] = useState(['Hiren', 'B', 'C'])
 
 	const handleNumPlayersChange = (e) => {
 		const count = parseInt(e.target.value, 10)
@@ -55,7 +51,7 @@ export const Setup = ({ onStartGame }) => {
 						required
 					/>
 				</div>
-				<div className="form-group">
+				{/* <div className="form-group">
 					<label>Number of Cards in Hand:</label>
 					<input
 						type="number"
@@ -63,7 +59,7 @@ export const Setup = ({ onStartGame }) => {
 						onChange={(e) => setNumCards(e.target.value)}
 						required
 					/>
-				</div>
+				</div> */}
 				{playerNames.map((name, index) => (
 					<div className="form-group" key={index}>
 						<label>Player {index + 1} Name:</label>
