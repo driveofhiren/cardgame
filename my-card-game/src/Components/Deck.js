@@ -104,7 +104,8 @@ export const Deck = () => {
 		}
 	}
 	if (!gameState) {
-		return <Setup onStartGame={startGame} />
+		return <div>Loading...</div>
+		// return <Setup onStartGame={startGame} />
 	}
 
 	const renderTargetSetting = () => {
