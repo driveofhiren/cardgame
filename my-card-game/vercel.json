@@ -31,5 +31,6 @@
 			"src": "/(.*)",
 			"dest": "/public/index.html"
 		}
-	]
+	],
+	"buildCommand": "npm run build"
 }
