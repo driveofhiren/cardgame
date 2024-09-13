@@ -1,6 +1,7 @@
 {
 	"short_name": "React App",
 	"name": "Create Reacts App Sample",
+	"id": "./",
 	"icons": [
 		{
 			"src": "favicon.ico",
