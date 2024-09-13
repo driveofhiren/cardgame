@@ -6,7 +6,7 @@ import { Setup } from './Setup'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-const serverAddress = 'https://tartan-pond-catamaran.glitch.me'
+const serverAddress = 'wss://tartan-pond-catamaran.glitch.me'
 const client = new W3CWebSocket(serverAddress)
 // const client = new W3CWebSocket('ws://192.168.2.81:8080')
 
