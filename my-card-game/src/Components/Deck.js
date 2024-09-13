@@ -32,7 +32,7 @@ export const Deck = () => {
 			}
 
 			if (data.playerIndex !== undefined) {
-				setPlayerIndex(data.playerIndex) // Set player index received from the server
+				setPlayerIndex(data.playerIndex) // Set player findex received from the server
 			}
 			if (data.action === 'chooseMasterSuit') {
 				const action = {
