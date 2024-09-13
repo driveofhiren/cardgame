@@ -12,6 +12,22 @@
 	],
 	"routes": [
 		{
+			"src": "/manifest.json",
+			"dest": "/public/manifest.json"
+		},
+		{
+			"src": "/favicon.ico",
+			"dest": "/public/favicon.ico"
+		},
+		{
+			"src": "/logo192.png",
+			"dest": "/public/logo192.png"
+		},
+		{
+			"src": "/logo512.png",
+			"dest": "/public/logo512.png"
+		},
+		{
 			"src": "/(.*)",
 			"dest": "/public/index.html"
 		}
