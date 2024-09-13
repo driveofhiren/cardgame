@@ -6,6 +6,10 @@
 			"use": "@vercel/node"
 		},
 		{
+			"src": "Setup.js",
+			"use": "@vercel/node"
+		},
+		{
 			"src": "public/**/*",
 			"use": "@vercel/static"
 		}
