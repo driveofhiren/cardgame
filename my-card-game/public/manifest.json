@@ -22,5 +22,18 @@
 	"start_url": "/",
 	"display": "standalone",
 	"theme_color": "#000000",
-	"background_color": "#ffffff"
+	"background_color": "#ffffff",
+	"scope": "/",
+	"screenshots": [
+		{
+			"src": "screenshot1.png",
+			"sizes": "640x480",
+			"type": "image/png"
+		},
+		{
+			"src": "screenshot2.png",
+			"sizes": "1280x720",
+			"type": "image/png"
+		}
+	]
 }
