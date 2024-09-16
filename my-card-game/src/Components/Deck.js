@@ -27,6 +27,7 @@ export const Deck = () => {
 	useEffect(() => {
 		client.onmessage = (message) => {
 			const data = JSON.parse(message.data)
+			console.log(data)
 			if (data.totalRounds) {
 				setGameState(data)
 			}
@@ -87,13 +88,14 @@ export const Deck = () => {
 
 	const startGame = (config) => {
 		if (client.readyState === WebSocket.OPEN) {
-			const action = { action: 'setup', config }
-			client.send(JSON.stringify(action))
+			// const action = { action: 'createRoom', config }
+
+			client.send(JSON.stringify(config))
 		} else {
 			client.onopen = () => {
 				console.log('WebSocket Client Connected')
-				const action = { action: 'setup', config }
-				client.send(JSON.stringify(action))
+				// const action = { action: 'createRoom', config }
+				client.send(JSON.stringify(config))
 			}
 		}
 	}

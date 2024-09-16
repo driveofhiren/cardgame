@@ -2,71 +2,122 @@ const WebSocket = require('ws')
 const PORT = 8080
 const wss = new WebSocket.Server({ port: PORT })
 
-let gameState = {
-	players: [
-		{ name: 'Host', hand: [], points: 0, fp: 0, target: null, rank: null },
-	],
-	masterCardplayer: 0,
-	board: [],
-	round: 1,
-	firstCard: null,
-	currentPlayerIndex: 0,
-	masterSuit: '♠',
-	totalRounds: null,
-	numCards: null,
-}
-let nextClientId = 1 // Counter for pookjashiredj unique client IDs
-let clients = {}
-const sessions = {}
+let rooms = {} // Store rooms and their game states
+let nextClientId = 1 // Counter for unique client IDs
+let clients = {} // Store connected clients
 
 wss.on('connection', function connection(ws) {
-	// Check if the game is full
-	if (Object.keys(clients).length >= gameState.players.length) {
-		console.log('Game is full')
-		ws.send(
-			JSON.stringify({
-				action: 'error',
-				message: 'Game is full!',
-			})
-		)
-		return
-	}
-
-	const clientId = nextClientId++
-	const playerName =
-		gameState.players[clientId - 1]?.name || `Player${clientId}`
-	console.log(playerName + ' Connected')
-
-	const playerGameState = {
-		...gameState,
-		playerIndex: clientId - 1,
-	}
-	ws.send(JSON.stringify(playerGameState))
-
-	clients[clientId] = ws
+	let clientId = nextClientId++
+	ws.clientId = clientId
+	let currentRoomId = null // Each client will be part of a specific room
 
 	ws.on('message', function incoming(message) {
 		const data = JSON.parse(message)
-		if (data.action === 'setup') {
-			setupGame(data.config, ws)
-			console.log('called')
-		} else {
-			updateGameState(data)
+		console.log(data)
+
+		if (data.action === 'createRoom') {
+			// Room creation flow
+			currentRoomId = generateRoomId()
+			setupGame(data.config, ws, currentRoomId) // Create the new room
+			clients[clientId] = { ws, roomId: currentRoomId }
+		}
+		// Handle 'joinRoom' action separately
+		else if (data.action === 'joinRoom') {
+			console.log(data.action)
+			currentRoomId = data.roomId
+
+			// Check if the room exists
+			if (!rooms[currentRoomId]) {
+				ws.send(
+					JSON.stringify({
+						action: 'error',
+						message: 'Room does not exist!',
+					})
+				)
+				return
+			}
+
+			const room = rooms[currentRoomId]
+
+			// Find an existing player slot that does not have a WebSocket connection yet
+			let playerIndex = null
+			for (let i = 0; i < room.players.length; i++) {
+				// Check if the player slot is unassigned (no WebSocket connection)
+				if (!room.players[i].ws) {
+					playerIndex = i // Assign the player to this slot
+					break
+				}
+			}
+
+			// If no available player slot is found, the room is full
+			if (playerIndex === null) {
+				ws.send(
+					JSON.stringify({
+						action: 'error',
+						message: 'Room is full!',
+					})
+				)
+				return
+			}
+
+			// Assign the WebSocket connection to the existing player slot without changing their name or details
+			room.players[playerIndex].ws = ws
+
+			// Store client connection data
+			clients[clientId] = { ws, roomId: currentRoomId, playerIndex }
+
+			// Send the current game state to the newly joined player
+			const playerGameState = {
+				...room,
+				playerIndex, // Send the player's index so they know which one they are
+			}
+			console.log(playerGameState)
+			ws.send(JSON.stringify(playerGameState))
+
+			// Broadcast to other players that a new player has joined
+			broadcastGameState(currentRoomId, {
+				action: 'playerJoined',
+				playerName: room.players[playerIndex].name, // Use the existing player name
+			})
+		}
+		// Handle any game actions after room join
+		else if (currentRoomId) {
+			updateGameState(currentRoomId, data)
 		}
 	})
 
+	// Handle player disconnection
 	ws.on('close', function () {
-		console.log('Client disconnected ' + clientId)
-		nextClientId--
-		delete clients[clientId]
+		console.log(`Client disconnected: ${clientId}`)
+		if (clients[clientId]) {
+			const roomId = clients[clientId].roomId
+			const room = rooms[roomId]
+
+			// Remove the player's WebSocket connection (but keep the player data intact)
+			if (room) {
+				room.players[clients[clientId].playerIndex].ws = null
+
+				// Delete the room if no players are left with WebSocket connections
+				const activePlayers = room.players.filter((player) => player.ws)
+				if (activePlayers.length === 0) {
+					delete rooms[roomId]
+				}
+			}
+
+			// Remove the client connection
+			delete clients[clientId]
+		}
 	})
 })
-//set up this function for different games.
-function setupGame(config, ws) {
-	const { numPlayers, numRounds, numCards, playerNames } = config
 
-	gameState = {
-		players: playerNames.map((name, index) => ({
+function setupGame(config, ws, roomId) {
+	const { numPlayers, numRounds, numCards, playerNames } = config
+	console.log(playerNames)
+	console.log(roomId)
+
+	// Create the room game state
+	rooms[roomId] = {
+		players: playerNames.map((name) => ({
 			name,
 			hand: [],
 			points: 0,
@@ -82,32 +133,36 @@ function setupGame(config, ws) {
 		masterSuit: null,
 		totalRounds: numRounds,
 		numCards: numCards,
-	}
-	const playerGameState = { ...gameState, playerIndex: 0 }
-	ws.send(JSON.stringify(playerGameState))
-	const action = {
-		action: 'setTargets',
+		totalPlayers: numPlayers,
 	}
 
-	broadcastGameState(action)
+	const playerGameState = { ...rooms[roomId], playerIndex: 0 }
+	console.log(playerGameState)
+	ws.send(JSON.stringify(playerGameState))
+
+	const action = { action: 'setTargets' }
+	broadcastGameState(roomId, action)
 }
 
-function updateGameState(data) {
-	// console.log('****ACTION LOGS*****', data);
+function updateGameState(roomId, data) {
+	const gameState = rooms[roomId]
+
 	if (data.action === 'dealCards') {
-		dealCards()
+		dealCards(roomId)
 	}
 	if (data.action === 'setTarget') {
-		setPlayerTarget(data.playerIndex, data.target)
+		setPlayerTarget(roomId, data.playerIndex, data.target)
 	}
 	if (data.action === 'playCard') {
-		playCard(data.currentPlayerIndex, data.cardIndex, data.card)
+		playCard(roomId, data.currentPlayerIndex, data.cardIndex, data.card)
 	}
 	if (data.action === 'decideMasterSuit') {
-		decideMasterSuit(data.masterSuit)
+		decideMasterSuit(roomId, data.masterSuit)
 	}
+
 	if (data.action === 'calculatePointsAndResetBoard') {
 		calculatePointsAndResetBoard(
+			roomId,
 			data.currentPlayerIndex,
 			data.players,
 			data.masterCardplayer,
@@ -117,36 +172,33 @@ function updateGameState(data) {
 	}
 }
 
-function setPlayerTarget(playerIndex, target) {
+function setPlayerTarget(roomId, playerIndex, target) {
+	const gameState = rooms[roomId]
+
 	if (gameState.players[playerIndex]) {
 		gameState.players[playerIndex].target = target
 	}
-	//condition to compare gamestate.numcards and sum of all player.target
 
-	console.log(playerIndex + '__' + gameState.players[playerIndex].target)
-	// Check if all players have set their targets
 	const allTargetsSet = gameState.players.every(
 		(player) => player.target !== null
 	)
-	console.log(gameState.currentPlayerIndex)
 	gameState.currentPlayerIndex =
 		(gameState.currentPlayerIndex + 1) % gameState.players.length
-	console.log('After_' + gameState.currentPlayerIndex)
 
 	if (allTargetsSet) {
-		//next player from the first target setter
 		gameState.currentPlayerIndex =
 			(gameState.currentPlayerIndex + 1) % gameState.players.length
-		// Proceed with game setup or start
-		broadcastGameState({ action: 'gameSetupComplete' })
+		broadcastGameState(roomId, { action: 'gameSetupComplete' })
 	} else {
-		broadcastGameState({ action: 'waitingForTargets' })
+		broadcastGameState(roomId, { action: 'waitingForTargets' })
 	}
 }
 
-function dealCards() {
+function dealCards(roomId) {
+	const gameState = rooms[roomId]
+	console.log('deal cards')
 	const suits = ['♥', '♦', '♠', '♣']
-	const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'] // Adjusted for 235 game
+	const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 
 	const excludedSuits = ['♣', '♦']
 	const excludedValue = '7'
@@ -160,78 +212,69 @@ function dealCards() {
 			.map((value) => ({ id: `${suit}-${value}`, suit, value }))
 	)
 
-	// Shuffle the deck
 	for (let i = deck.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1))
 		;[deck[i], deck[j]] = [deck[j], deck[i]]
 	}
 
-	// Deal cards to players orignal
 	gameState.players.forEach((player, index) => {
 		gameState.players[index].hand = deck.slice(
-			index * gameState.numCards,
-			(index + 1) * gameState.numCards
+			index * gameState.totalRounds,
+			(index + 1) * gameState.totalRounds
 		)
 	})
+	console.log(gameState.players)
 
-	const action = {
-		action: 'chooseMasterSuit',
-	}
-
-	broadcastGameState(action)
+	const action = { action: 'chooseMasterSuit' }
+	broadcastGameState(roomId, action)
 }
 
-function playCard(currentPlayerIndex, cardIndex, card) {
+function playCard(roomId, currentPlayerIndex, cardIndex, card) {
+	const gameState = rooms[roomId]
 	const currentPlayer = gameState.players[currentPlayerIndex]
 
 	if (gameState.firstCard === null) {
 		gameState.firstCard = card
 	}
 
-	const updatedPlayers = gameState.players.map((player, index) => {
+	gameState.players = gameState.players.map((player, index) => {
 		if (index === gameState.currentPlayerIndex) {
 			return {
 				...player,
-				hand: player.hand.filter((_, index) => index !== cardIndex),
+				hand: player.hand.filter((_, idx) => idx !== cardIndex),
 			}
 		}
 		return player
 	})
 
-	// Push the card onto the board after updating currentPlayerIndex
 	gameState.board.push({ currentPlayerIndex, cardIndex, card })
-
-	// Update currentPlayerIndex only if allplayerhands are not empty
 
 	if (gameState.board.length < gameState.players.length) {
 		gameState.currentPlayerIndex =
 			(gameState.currentPlayerIndex + 1) % gameState.players.length
 	}
 
-	if (updatedPlayers.every((player) => player.hand.length === 0)) {
+	if (gameState.players.every((player) => player.hand.length === 0)) {
 		gameState.round++
 	}
 
-	gameState.players = updatedPlayers
-
-	broadcastGameState()
+	broadcastGameState(roomId)
 }
 
-function decideMasterSuit(suit) {
-	gameState.masterSuit = suit
-
-	broadcastGameState()
+function decideMasterSuit(roomId, suit) {
+	rooms[roomId].masterSuit = suit
+	broadcastGameState(roomId)
 }
 
 function calculatePointsAndResetBoard(
+	roomId,
 	currentPlayerIndex,
 	players,
 	masterCardplayer,
 	round,
 	numCards
 ) {
-	console.log(gameState.board)
-	console.log(gameState.players)
+	const gameState = rooms[roomId]
 	gameState.players = players
 	gameState.currentPlayerIndex = currentPlayerIndex
 	gameState.masterCardplayer = masterCardplayer
@@ -240,16 +283,27 @@ function calculatePointsAndResetBoard(
 	gameState.round = round
 	gameState.numCards = numCards
 
-	broadcastGameState()
+	broadcastGameState(roomId)
 }
 
-function broadcastGameState(action) {
+function broadcastGameState(roomId, action) {
 	wss.clients.forEach(function each(client) {
-		if (client.readyState === WebSocket.OPEN) {
-			const message = action ? { ...gameState, ...action } : gameState
+		const clientData = clients[client.clientId] // client.clientId now exists
+		if (
+			clientData &&
+			clientData.roomId === roomId &&
+			client.readyState === WebSocket.OPEN
+		) {
+			const message = action
+				? { ...rooms[roomId], ...action }
+				: rooms[roomId]
 			client.send(JSON.stringify(message))
 		}
 	})
+}
+
+function generateRoomId() {
+	return Math.random().toString(36).substring(2, 8)
 }
 
 console.log(`WebSocket server listening on port ${PORT}`)
