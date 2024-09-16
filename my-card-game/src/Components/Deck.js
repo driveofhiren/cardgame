@@ -113,7 +113,8 @@ export const Deck = () => {
 		if (gameState) {
 			const currentPlayer =
 				gameState.players[gameState.currentPlayerIndex]
-			const totalCards = gameState.numCards // Assuming total number of cards is available in gameState
+			// const totalCards = gameState.numCards // Assuming total number of cards is available in gameState
+			const totalCards = currentPlayer.hand.length
 
 			// Calculate sum of all targets set so far (excluding current player)
 			const sumOfTargets = gameState.players
@@ -128,6 +129,7 @@ export const Deck = () => {
 			// Determine if the current player is the last one to set the target for this round
 			const isLastPlayerToSetTarget =
 				playersWhoSetTarget === gameState.players.length - 1
+			console.log(isLastPlayerToSetTarget)
 
 			const remainingTarget = totalCards - sumOfTargets
 
