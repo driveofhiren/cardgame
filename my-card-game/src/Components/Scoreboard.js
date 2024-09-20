@@ -44,21 +44,22 @@ const Scoreboard = ({ gameState }) => {
 
 						<div className="player-stats">
 							<div className="stat">
-								<span className="stat-label">CP:</span>
+								<span className="stat-label">CP</span>
 								<span className="stat-value cp-value">
 									{player.points}
 								</span>
 							</div>
+
 							<div className="stat">
-								<span className="stat-label">Points:</span>
-								<span className="stat-value points-value">
-									{player.fp}
+								<span className="stat-label">Target</span>
+								<span className="stat-value">
+									{player.target}
 								</span>
 							</div>
 							<div className="stat">
-								<span className="stat-label">Target:</span>
-								<span className="stat-value">
-									{player.target}
+								<span className="stat-label">Points</span>
+								<span className="stat-value points-value">
+									{player.fp}
 								</span>
 							</div>
 						</div>

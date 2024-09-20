@@ -227,18 +227,23 @@ function dealCards(roomId) {
 	const gameState = rooms[roomId]
 	console.log('deal cards')
 	const suits = ['♥', '♦', '♠', '♣']
-	const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-
-	const excludedSuits = ['♣', '♦']
-	const excludedValue = '7'
+	const values = [
+		'2',
+		'3',
+		'4',
+		'5',
+		'6',
+		'7',
+		'8',
+		'9',
+		'10',
+		'J',
+		'Q',
+		'K',
+		'A',
+	]
 	const deck = suits.flatMap((suit) =>
-		values
-			.filter(
-				(value) =>
-					!(suit === excludedSuits[0] && value === excludedValue) &&
-					!(suit === excludedSuits[1] && value === excludedValue)
-			)
-			.map((value) => ({ id: `${suit}-${value}`, suit, value }))
+		values.map((value) => ({ id: `${suit}-${value}`, suit, value }))
 	)
 
 	for (let i = deck.length - 1; i > 0; i--) {
@@ -335,4 +340,4 @@ function generateRoomId() {
 	return Math.random().toString(36).substring(2, 8)
 }
 
-console.log(`WebSocket server listening on port ${PORT}`)
+console.log(`Judgement is Live`)

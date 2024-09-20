@@ -24,7 +24,7 @@ body {
 }
 
 .board {
-	padding: 0;
+	padding: 0px 60px;
 	position: relative;
 	width: 100%;
 	height: 100%;
@@ -255,6 +255,7 @@ button[type='submit']:hover {
 
 .stat-label {
 	font-size: 0.8em;
+	margin: 2px;
 }
 
 .stat-value {
@@ -294,8 +295,8 @@ button[type='submit']:hover {
 	margin: 50px auto;
 	background: linear-gradient(
 		to bottom,
-		#5066c7,
-		#6b43b0
+		#b0bfff,
+		#b58bff
 	); /* More muted gradient */
 	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
 }
@@ -310,7 +311,7 @@ button[type='submit']:hover {
 	margin-bottom: 6px;
 	font-size: 1.1em;
 	font-weight: 600;
-	color: #ffffff;
+	color: #000000;
 }
 
 .form-group input[type='number'],
@@ -331,7 +332,8 @@ input[type='number']:focus,
 input[type='text']:focus {
 	outline: none;
 	border: 2px solid #00bcd4;
-	background-color: #333; /* Darker background on focus */
+	color: #000000;
+	background-color: #c6c6c6; /* Darker background on focus */
 }
 
 button[type='submit'] {

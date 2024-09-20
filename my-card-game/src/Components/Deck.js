@@ -20,6 +20,7 @@ export const Deck = () => {
 	const [target, setTarget] = useState('')
 	const [roomId, setRoomId] = useState(null)
 	const [gameResult, setGameResult] = useState(null)
+	const [showRules, setShowRules] = useState(false)
 
 	const [editingPlayerIndex, setEditingPlayerIndex] = useState(null) // Track which player is being edited
 	const [newName, setNewName] = useState('')
@@ -617,6 +618,7 @@ export const Deck = () => {
 							/>
 						</div>
 					)}
+
 					<div className="row">
 						{' '}
 						{!gameState.masterSuit && (
@@ -634,12 +636,132 @@ export const Deck = () => {
 							<div className="mt-3">
 								<h2>Scoreboard</h2>
 							</div>
+							<h6>
+								Round {gameState.round}/{gameState.numCards}
+							</h6>
 							{/* <div className="row">
 								<div className="mt-3">
 									{renderMasterSuitSelection()}
 								</div>
 							</div> */}
 							<Scoreboard gameState={gameState} />
+							<button onClick={() => setShowRules(!showRules)}>
+								{showRules ? 'Hide Rules' : 'Show Rules'}
+							</button>
+							{showRules && (
+								<div
+									className={`rules-panel ${
+										showRules ? 'open' : ''
+									}`}
+								>
+									<div className="rules-content">
+										<h1>Judgement - Game Rules</h1>
+
+										<section>
+											<h2>Objective</h2>
+											<p>
+												The objective of{' '}
+												<strong>Judgement</strong> is to
+												earn points by predicting the
+												number of rounds you can win.
+												Points are awarded based on how
+												close your prediction (target)
+												is to your actual performance.
+											</p>
+										</section>
+
+										<section>
+											<h2>Setting Targets</h2>
+											<ul>
+												<li>
+													At the start of the game,
+													players are dealt a hand of
+													cards. Each player sets a
+													target for how many rounds
+													they believe they can win.{' '}
+												</li>
+												<li>
+													Players take turns setting a
+													target. The last player to
+													set a target cannot choose a
+													number that would make the
+													sum equal to the total
+													number of cards.
+												</li>
+											</ul>
+										</section>
+
+										<section>
+											<h2>Playing Cards</h2>
+											<ul>
+												<li>
+													Players play one card per
+													round. The first card played
+													in each round determines the
+													lead suit.
+												</li>
+												<li>
+													Players must follow the lead
+													suit if possible. If not,
+													they can play any card.
+												</li>
+												<li>
+													If no lead suit exists, the
+													first player to play chooses
+													any card.
+												</li>
+											</ul>
+										</section>
+
+										<section>
+											<h2>Master Suit</h2>
+											<p>
+												A <strong>Master Suit</strong>{' '}
+												is automatically selected at the
+												start of each round and is
+												stronger than the other suits.
+											</p>
+										</section>
+
+										<section>
+											<h2>Winning a Round</h2>
+											<p>
+												The player who plays the
+												highest-ranked card of the lead
+												suit earns CP, unless a card
+												from the Master Suit is played.
+											</p>
+										</section>
+
+										<section>
+											<h2>Scoring</h2>
+											<ul>
+												<li>
+													If a player they predicted,
+													they score CP equal to their
+													target, plus a bonus of 10
+													points.
+												</li>
+												<li>
+													Players are ranked based on
+													their total points at the
+													end of the game.
+												</li>
+											</ul>
+										</section>
+
+										<section>
+											<h2>End of the Game</h2>
+											<p>
+												The game continues until the
+												number of cards per hand
+												decreases to 1. Ties are
+												possible.
+											</p>
+										</section>
+									</div>
+								</div>
+							)}
 						</div>
 					</div>
 				</div>
