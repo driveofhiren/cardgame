@@ -7,14 +7,13 @@ export const Setup = ({ onStartGame }) => {
 	const [roomId, setRoomId] = useState('')
 	const [numPlayers, setNumPlayers] = useState(3)
 	const [numRounds, setNumRounds] = useState(1)
-	const [playerNames, setPlayerNames] = useState(['Hiren', 'B', 'C'])
+	const [numCards, setNumCards] = useState(4)
+	const [playerNames, setPlayerNames] = useState(['Host', 'P2', 'P3'])
 
 	const handleNumPlayersChange = (e) => {
 		const count = parseInt(e.target.value, 10)
 		setNumPlayers(count)
-		setPlayerNames(
-			Array.from({ length: count }, (_, i) => `Player ${i + 1}`)
-		)
+		setPlayerNames(Array.from({ length: count }, (_, i) => `P ${i + 1}`))
 	}
 
 	const handlePlayerNameChange = (index, name) => {
@@ -27,7 +26,7 @@ export const Setup = ({ onStartGame }) => {
 		e.preventDefault()
 		onStartGame({
 			action: 'createRoom',
-			config: { numPlayers, numRounds, playerNames },
+			config: { numPlayers, numRounds, playerNames, numCards },
 		})
 	}
 
@@ -57,12 +56,21 @@ export const Setup = ({ onStartGame }) => {
 							required
 						/>
 					</div>
-					<div className="form-group">
+					{/* <div className="form-group">
 						<label>Number of Rounds:</label>
 						<input
 							type="number"
 							value={numRounds}
 							onChange={(e) => setNumRounds(e.target.value)}
+							required
+						/>
+					</div> */}
+					<div className="form-group">
+						<label>Rounds</label>
+						<input
+							type="number"
+							value={numCards}
+							onChange={(e) => setNumCards(e.target.value)}
 							required
 						/>
 					</div>

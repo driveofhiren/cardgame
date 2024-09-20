@@ -3,13 +3,16 @@ const PORT = 8080
 const wss = new WebSocket.Server({ port: PORT })
 
 let rooms = {} // Store rooms and their game states
-let nextClientId = 1 // Counter for unique client IDs
+let nextClientId = 0 // Counter for unique client IDs
 let clients = {} // Store connected clients
 
 wss.on('connection', function connection(ws) {
 	let clientId = nextClientId++
 	ws.clientId = clientId
 	let currentRoomId = null // Each client will be part of a specific room
+
+	// Save client information
+	clients[clientId] = { ws, roomId: null, playerIndex: null }
 
 	ws.on('message', function incoming(message) {
 		const data = JSON.parse(message)
@@ -19,8 +22,16 @@ wss.on('connection', function connection(ws) {
 			// Room creation flow
 			currentRoomId = generateRoomId()
 			setupGame(data.config, ws, currentRoomId) // Create the new room
-			clients[clientId] = { ws, roomId: currentRoomId }
+
+			// Assign the clientId to the first player (index 0) in the new room
+			clients[clientId].roomId = currentRoomId
+			clients[clientId].playerIndex = 0 // Creator is always playerIndex 0
+
+			// Set the first player (creator) as the active client for this room
+			const room = rooms[currentRoomId]
+			room.players[0].clientId = clientId
 		}
+
 		// Handle 'joinRoom' action separately
 		else if (data.action === 'joinRoom') {
 			console.log(data.action)
@@ -42,8 +53,7 @@ wss.on('connection', function connection(ws) {
 			// Find an existing player slot that does not have a WebSocket connection yet
 			let playerIndex = null
 			for (let i = 0; i < room.players.length; i++) {
-				// Check if the player slot is unassigned (no WebSocket connection)
-				if (!room.players[i].ws) {
+				if (room.players[i].clientId === null) {
 					playerIndex = i // Assign the player to this slot
 					break
 				}
@@ -60,11 +70,12 @@ wss.on('connection', function connection(ws) {
 				return
 			}
 
-			// Assign the WebSocket connection to the existing player slot without changing their name or details
-			room.players[playerIndex].ws = ws
+			// Assign the client ID to the existing player slot
+			room.players[playerIndex].clientId = clientId
 
-			// Store client connection data
-			clients[clientId] = { ws, roomId: currentRoomId, playerIndex }
+			// Update client connection data
+			clients[clientId].roomId = currentRoomId
+			clients[clientId].playerIndex = playerIndex
 
 			// Send the current game state to the newly joined player
 			const playerGameState = {
@@ -80,6 +91,7 @@ wss.on('connection', function connection(ws) {
 				playerName: room.players[playerIndex].name, // Use the existing player name
 			})
 		}
+
 		// Handle any game actions after room join
 		else if (currentRoomId) {
 			updateGameState(currentRoomId, data)
@@ -93,12 +105,17 @@ wss.on('connection', function connection(ws) {
 			const roomId = clients[clientId].roomId
 			const room = rooms[roomId]
 
-			// Remove the player's WebSocket connection (but keep the player data intact)
 			if (room) {
-				room.players[clients[clientId].playerIndex].ws = null
+				// Remove the player's clientId
+				const playerIndex = clients[clientId].playerIndex
+				if (playerIndex !== null) {
+					room.players[playerIndex].clientId = null
+				}
 
 				// Delete the room if no players are left with WebSocket connections
-				const activePlayers = room.players.filter((player) => player.ws)
+				const activePlayers = room.players.filter(
+					(player) => player.clientId !== null
+				)
 				if (activePlayers.length === 0) {
 					delete rooms[roomId]
 				}
@@ -124,6 +141,7 @@ function setupGame(config, ws, roomId) {
 			fp: 0,
 			target: null,
 			rank: null,
+			clientId: null, // Store only clientId instead of the WebSocket
 		})),
 		masterCardplayer: numPlayers - 1,
 		board: [],
@@ -134,6 +152,7 @@ function setupGame(config, ws, roomId) {
 		totalRounds: numRounds,
 		numCards: numCards,
 		totalPlayers: numPlayers,
+		roomId: roomId,
 	}
 
 	const playerGameState = { ...rooms[roomId], playerIndex: 0 }
@@ -159,7 +178,6 @@ function updateGameState(roomId, data) {
 	if (data.action === 'decideMasterSuit') {
 		decideMasterSuit(roomId, data.masterSuit)
 	}
-
 	if (data.action === 'calculatePointsAndResetBoard') {
 		calculatePointsAndResetBoard(
 			roomId,
@@ -169,6 +187,17 @@ function updateGameState(roomId, data) {
 			data.round,
 			data.numCards
 		)
+	}
+	if (data.action === 'updatePlayerName') {
+		const gameState = rooms[roomId]
+		const playerIndex = data.playerIndex
+		const newName = data.newName
+
+		if (gameState.players[playerIndex]) {
+			gameState.players[playerIndex].name = newName
+		}
+
+		broadcastGameState(roomId)
 	}
 }
 
@@ -219,8 +248,8 @@ function dealCards(roomId) {
 
 	gameState.players.forEach((player, index) => {
 		gameState.players[index].hand = deck.slice(
-			index * gameState.totalRounds,
-			(index + 1) * gameState.totalRounds
+			index * gameState.numCards,
+			(index + 1) * gameState.numCards
 		)
 	})
 	console.log(gameState.players)

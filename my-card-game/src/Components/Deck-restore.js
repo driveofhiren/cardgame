@@ -7,8 +7,6 @@ import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { FaPencilAlt, FaCheck } from 'react-icons/fa'
 import { FaTimes } from 'react-icons/fa'
-import Scoreboard from './Scoreboard'
-import RenderBoard from './RenderBoard'
 
 const serverAddress = 'wss://tartan-pond-catamaran.glitch.me'
 const client = new W3CWebSocket(serverAddress)
@@ -19,7 +17,7 @@ export const Deck = () => {
 	const [playerIndex, setPlayerIndex] = useState(-1)
 	const [target, setTarget] = useState('')
 	const [roomId, setRoomId] = useState(null)
-	const [gameResult, setGameResult] = useState(null)
+	const [isConnected, setIsConnected] = useState(false)
 
 	const [editingPlayerIndex, setEditingPlayerIndex] = useState(null) // Track which player is being edited
 	const [newName, setNewName] = useState('')
@@ -36,7 +34,7 @@ export const Deck = () => {
 	useEffect(() => {
 		client.onmessage = (message) => {
 			const data = JSON.parse(message.data)
-			// console.log(data)
+			console.log(data)
 			if (data.totalRounds) {
 				setGameState(data)
 			}
@@ -111,10 +109,6 @@ export const Deck = () => {
 			}
 		}
 	}
-	const resetGame = () => {
-		setGameState(null) // Clear the game state
-		setGameResult(null) // Clear any result message
-	}
 	const setPlayerTarget = (target) => {
 		if (client.readyState === WebSocket.OPEN) {
 			const action = { action: 'setTarget', playerIndex, target }
@@ -145,6 +139,7 @@ export const Deck = () => {
 			// Determine if the current player is the last one to set the target for this round
 			const isLastPlayerToSetTarget =
 				playersWhoSetTarget === gameState.players.length - 1
+			console.log(isLastPlayerToSetTarget)
 
 			const remainingTarget = totalCards - sumOfTargets
 
@@ -292,7 +287,7 @@ export const Deck = () => {
 			return max
 		}, gameState.board[0].card)
 
-		// console.log('winning Card_' + winningCard.suit + winningCard.value)
+		console.log('winning Card_' + winningCard.suit + winningCard.value)
 		const winningPlayerIndex = gameState.board.find(
 			(card) => card.card === winningCard
 		).currentPlayerIndex
@@ -346,17 +341,14 @@ export const Deck = () => {
 							.map((winner) => winner.name)
 							.join(', ')
 
-						setGameResult(
+						alert(
 							`It's a tie! The winners are ${winnersNames} with ${winners[0].fp}`
 						)
 					} else {
-						setGameResult(
+						alert(
 							`The winner is ${winners[0].name} with ${winners[0].fp} points!`
 						)
 					}
-					setTimeout(() => {
-						resetGame()
-					}, 10000)
 				}
 				//make all player point 0
 				updatedPlayers.forEach((player) => {
@@ -481,6 +473,41 @@ export const Deck = () => {
 		return null
 	}
 
+	const renderBoard = () => {
+		return (
+			<div className="board-container">
+				<div className="board">
+					{gameState.board &&
+						gameState.board.length > 0 &&
+						gameState.board.map((play, index) => (
+							<div
+								key={index}
+								className="card-container"
+								style={{
+									left: `${index * 70}px`, // Adjust spacing between cards
+									zIndex: index,
+									position: 'absolute', // Ensure positioning is relative to parent
+								}}
+							>
+								<div className="player-name-small">
+									{
+										gameState.players[
+											play.currentPlayerIndex
+										].name
+									}
+								</div>
+								<Card
+									suit={play.card.suit}
+									value={play.card.value}
+									className="card-small"
+								/>
+							</div>
+						))}
+				</div>
+			</div>
+		)
+	}
+
 	const renderPlayers = () => {
 		const handleNameChange = (index) => {
 			const action = {
@@ -499,45 +526,46 @@ export const Deck = () => {
 
 		return gameState.players.map((player, index) => (
 			<div key={index} className="player-container">
-				{/* Conditionally render player name */}
-				{playerIndex === index && (
+				{editingPlayerIndex === index ? (
+					// If it's the current player, show input field to edit name
+					<div className="edit-name-container">
+						<input
+							type="text"
+							value={newName}
+							onChange={(e) => setNewName(e.target.value)}
+							placeholder={player.name} // Show current name as placeholder
+							className="name-input" // Apply styles for a smaller input
+						/>
+						<a
+							onClick={() => handleNameChange(index)}
+							className="save-icon"
+							title="Save Name"
+						>
+							<FaCheck /> {/* Use checkmark icon for saving */}
+						</a>
+					</div>
+				) : (
+					// Show name with edit option if it's the current player
 					<div className="player-name-container">
-						{editingPlayerIndex === index ? (
-							<div className="edit-name-container">
-								<input
-									type="text"
-									value={newName}
-									onChange={(e) => setNewName(e.target.value)}
-									placeholder={player.name}
-									className="name-input"
-								/>
-								<a
-									onClick={() => handleNameChange(index)}
-									className="save-icon"
-									title="Save Name"
-								>
-									<FaCheck />
-								</a>
-							</div>
-						) : (
-							<>
-								<h4 className="player-name">{player.name}</h4>
-								<a
-									onClick={() => startEditing(index)}
-									className="edit-icon"
-									title="Edit Name"
-								>
-									<FaPencilAlt />
-								</a>
-							</>
+						<h4 className="player-name">{player.name}</h4>
+
+						{playerIndex === index && (
+							<a
+								onClick={() => startEditing(index)}
+								className="edit-icon"
+								title="Edit Name"
+							>
+								<FaPencilAlt />{' '}
+								{/* Use pencil icon for editing */}
+							</a>
 						)}
 					</div>
 				)}
 
-				{/* Show the hand only for the visible player */}
-				{playerIndex === index && (
-					<div className="hand">
-						{player.hand.map((card, cardIndex) => (
+				<div className="hand">
+					{playerIndex === index ? (
+						// Render the player's hand if it's their turn
+						player.hand.map((card, cardIndex) => (
 							<button
 								key={card.id}
 								className="card-button"
@@ -549,18 +577,13 @@ export const Deck = () => {
 							>
 								<Card suit={card.suit} value={card.value} />
 							</button>
-						))}
-					</div>
-				)}
+						))
+					) : (
+						<div>{/* <i>Hidden</i> */}</div>
+					)}
+				</div>
 			</div>
 		))
-	}
-	{
-		gameResult && (
-			<div className="alert alert-success text-center">
-				<h4>{gameResult}</h4>
-			</div>
-		)
 	}
 
 	const masterCard = gameState.masterSuit
@@ -569,20 +592,13 @@ export const Deck = () => {
 
 	return (
 		<div className="container-fluid">
-			{gameResult && (
-				<div>
-					<div className="alert alert-success text-center">
-						<h4>{gameResult}</h4>
-					</div>
-					<div className="text-center mt-3">
-						<button className="btn btn-primary" onClick={resetGame}>
-							Start New Game
-						</button>
-					</div>
-				</div>
-			)}
-
 			<div className="grid-container">
+				{/* Display Room ID */}
+				{roomId && (
+					<div className="room-info">
+						<h3>Room ID: {roomId}</h3> {/* Display the roomId */}
+					</div>
+				)}
 				{/* Left column */}
 				<div className="players-hand-column">
 					<div
@@ -591,46 +607,35 @@ export const Deck = () => {
 					>
 						{renderPlayers()}
 					</div>
-					<div>
-						{' '}
-						<RenderBoard gameState={gameState} />
-					</div>
-					{renderTargetSetting()}
+
+					{renderBoard()}
 				</div>
 
 				{/* Right column */}
 				<div className="other-things-column">
-					{/* Display Room ID */}
-					{roomId && (
-						<div className="room-info">
-							<h3>Room ID: {roomId}</h3>{' '}
-							{/* Display the roomId */}
-						</div>
-					)}
-
-					{masterCard && (
-						<div style={{ margin: '5px' }}>
-							<Card
-								value={null}
-								suit={masterCard.suit}
-								className="card-small"
-							/>
-						</div>
-					)}
 					<div className="row">
-						{' '}
-						{!gameState.masterSuit && (
-							<button
-								className="btn btn-primary deal-button"
-								onClick={dealCards}
-							>
-								Deal Cards
-							</button>
-						)}
 						<div
 							id="labels"
 							className="d-flex flex-column align-items-center"
 						>
+							{!gameState.masterSuit && (
+								<button
+									className="btn btn-primary deal-button"
+									onClick={dealCards}
+								>
+									Deal Cards
+								</button>
+							)}
+							<div className="mt-3">Round: {gameState.round}</div>
+							{masterCard && (
+								<div style={{ margin: '5px' }}>
+									<Card
+										value={null}
+										suit={masterCard.suit}
+										className="card-small"
+									/>
+								</div>
+							)}
 							<div className="mt-3">
 								<h2>Scoreboard</h2>
 							</div>
@@ -639,7 +644,85 @@ export const Deck = () => {
 									{renderMasterSuitSelection()}
 								</div>
 							</div> */}
-							<Scoreboard gameState={gameState} />
+							<div className="scoreboard">
+								{gameState.players.map((player, index) => (
+									<div
+										key={index}
+										className={`scoreboard-item ${
+											index ===
+											gameState.currentPlayerIndex
+												? 'current-player'
+												: ''
+										}`}
+									>
+										<div className="player-info">
+											<h3
+												className={`player-name ${
+													player.points +
+														player.hand.length <
+														player.target ||
+													player.points >
+														player.target
+														? 'player-name-lost'
+														: ''
+												}`}
+											>
+												{player.name}
+											</h3>
+
+											<div className="player-stats">
+												<div className="player-status">
+													{player.clientId ? (
+														<FaCheck
+															className="status-icon connected"
+															title="Connected"
+														/>
+													) : (
+														<FaTimes
+															className="status-icon disconnected"
+															title="Disconnected"
+														/>
+													)}
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														CP:
+													</span>
+													<span className="stat-value">
+														{player.points}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Points:
+													</span>
+													<span className="stat-value">
+														{player.fp}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Target:
+													</span>
+													<span className="stat-value">
+														{player.target}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Rank:
+													</span>
+													<span className="stat-value">
+														{player.rank}
+													</span>
+												</div>
+											</div>
+										</div>
+									</div>
+								))}
+							</div>
+
+							{renderTargetSetting()}
 						</div>
 					</div>
 				</div>
