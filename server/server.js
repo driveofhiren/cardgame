@@ -337,7 +337,14 @@ function broadcastGameState(roomId, action) {
 }
 
 function generateRoomId() {
-	return Math.random().toString(36).substring(2, 8)
+	const characters = 'abcdefghijklmnopqrstuvwxyz0123456789'
+	let roomId = ''
+	for (let i = 0; i < 4; i++) {
+		roomId += characters.charAt(
+			Math.floor(Math.random() * characters.length)
+		)
+	}
+	return roomId
 }
 
 console.log(`Judgement is Live`)

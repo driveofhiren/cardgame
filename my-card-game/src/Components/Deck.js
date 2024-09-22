@@ -166,6 +166,11 @@ export const Deck = () => {
 						alert(
 							`Invalid target! The sum of all targets cannot be equal to ${totalCards}. Please choose a different target.`
 						)
+					} else if (
+						numericTarget > gameState.numCards ||
+						numericTarget < 0
+					) {
+						alert(`Please choose valid Target!`)
 					} else {
 						setPlayerTarget(numericTarget)
 					}
@@ -179,12 +184,13 @@ export const Deck = () => {
 						<div className="d-inline-flex align-items-center">
 							<input
 								type="number"
-								value={target}
+								value={currentPlayer.target}
 								onChange={(e) => setTarget(e.target.value)}
 								min="0"
 								max="10"
 								className="form-control form-control-lg me-2"
-								style={{ width: '100px' }} // Bootstrap does not have a direct width control for small inputs
+								style={{ width: '100px' }}
+								autoFocus
 							/>
 							<button
 								onClick={handleSetTarget}
@@ -658,7 +664,6 @@ export const Deck = () => {
 										<h1>Judgement - Game Rules</h1>
 
 										<section>
-											<h2>Objective</h2>
 											<p>
 												The objective of{' '}
 												<strong>Judgement</strong> is to
