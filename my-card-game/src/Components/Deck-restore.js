@@ -7,8 +7,6 @@ import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { FaPencilAlt, FaCheck } from 'react-icons/fa'
 import { FaTimes } from 'react-icons/fa'
-import Scoreboard from './Scoreboard'
-import RenderBoard from './RenderBoard'
 
 const serverAddress = 'wss://tartan-pond-catamaran.glitch.me'
 const client = new W3CWebSocket(serverAddress)
@@ -19,8 +17,7 @@ export const Deck = () => {
 	const [playerIndex, setPlayerIndex] = useState(-1)
 	const [target, setTarget] = useState('')
 	const [roomId, setRoomId] = useState(null)
-	const [gameResult, setGameResult] = useState(null)
-	const [showRules, setShowRules] = useState(false)
+	const [isConnected, setIsConnected] = useState(false)
 
 	const [editingPlayerIndex, setEditingPlayerIndex] = useState(null) // Track which player is being edited
 	const [newName, setNewName] = useState('')
@@ -37,7 +34,7 @@ export const Deck = () => {
 	useEffect(() => {
 		client.onmessage = (message) => {
 			const data = JSON.parse(message.data)
-			// console.log(data)
+			console.log(data)
 			if (data.totalRounds) {
 				setGameState(data)
 			}
@@ -112,10 +109,6 @@ export const Deck = () => {
 			}
 		}
 	}
-	const resetGame = () => {
-		setGameState(null) // Clear the game state
-		setGameResult(null) // Clear any result message
-	}
 	const setPlayerTarget = (target) => {
 		if (client.readyState === WebSocket.OPEN) {
 			const action = { action: 'setTarget', playerIndex, target }
@@ -146,6 +139,7 @@ export const Deck = () => {
 			// Determine if the current player is the last one to set the target for this round
 			const isLastPlayerToSetTarget =
 				playersWhoSetTarget === gameState.players.length - 1
+			console.log(isLastPlayerToSetTarget)
 
 			const remainingTarget = totalCards - sumOfTargets
 
@@ -166,11 +160,6 @@ export const Deck = () => {
 						alert(
 							`Invalid target! The sum of all targets cannot be equal to ${totalCards}. Please choose a different target.`
 						)
-					} else if (
-						numericTarget > gameState.numCards ||
-						numericTarget < 0
-					) {
-						alert(`Please choose valid Target!`)
 					} else {
 						setPlayerTarget(numericTarget)
 					}
@@ -184,13 +173,12 @@ export const Deck = () => {
 						<div className="d-inline-flex align-items-center">
 							<input
 								type="number"
-								value={currentPlayer.target}
+								value={target}
 								onChange={(e) => setTarget(e.target.value)}
 								min="0"
 								max="10"
 								className="form-control form-control-lg me-2"
-								style={{ width: '100px' }}
-								autoFocus
+								style={{ width: '100px' }} // Bootstrap does not have a direct width control for small inputs
 							/>
 							<button
 								onClick={handleSetTarget}
@@ -299,7 +287,7 @@ export const Deck = () => {
 			return max
 		}, gameState.board[0].card)
 
-		// console.log('winning Card_' + winningCard.suit + winningCard.value)
+		console.log('winning Card_' + winningCard.suit + winningCard.value)
 		const winningPlayerIndex = gameState.board.find(
 			(card) => card.card === winningCard
 		).currentPlayerIndex
@@ -353,17 +341,14 @@ export const Deck = () => {
 							.map((winner) => winner.name)
 							.join(', ')
 
-						setGameResult(
+						alert(
 							`It's a tie! The winners are ${winnersNames} with ${winners[0].fp}`
 						)
 					} else {
-						setGameResult(
+						alert(
 							`The winner is ${winners[0].name} with ${winners[0].fp} points!`
 						)
 					}
-					setTimeout(() => {
-						resetGame()
-					}, 10000)
 				}
 				//make all player point 0
 				updatedPlayers.forEach((player) => {
@@ -488,6 +473,41 @@ export const Deck = () => {
 		return null
 	}
 
+	const renderBoard = () => {
+		return (
+			<div className="board-container">
+				<div className="board">
+					{gameState.board &&
+						gameState.board.length > 0 &&
+						gameState.board.map((play, index) => (
+							<div
+								key={index}
+								className="card-container"
+								style={{
+									left: `${index * 70}px`, // Adjust spacing between cards
+									zIndex: index,
+									position: 'absolute', // Ensure positioning is relative to parent
+								}}
+							>
+								<div className="player-name-small">
+									{
+										gameState.players[
+											play.currentPlayerIndex
+										].name
+									}
+								</div>
+								<Card
+									suit={play.card.suit}
+									value={play.card.value}
+									className="card-small"
+								/>
+							</div>
+						))}
+				</div>
+			</div>
+		)
+	}
+
 	const renderPlayers = () => {
 		const handleNameChange = (index) => {
 			const action = {
@@ -506,45 +526,46 @@ export const Deck = () => {
 
 		return gameState.players.map((player, index) => (
 			<div key={index} className="player-container">
-				{/* Conditionally render player name */}
-				{playerIndex === index && (
+				{editingPlayerIndex === index ? (
+					// If it's the current player, show input field to edit name
+					<div className="edit-name-container">
+						<input
+							type="text"
+							value={newName}
+							onChange={(e) => setNewName(e.target.value)}
+							placeholder={player.name} // Show current name as placeholder
+							className="name-input" // Apply styles for a smaller input
+						/>
+						<a
+							onClick={() => handleNameChange(index)}
+							className="save-icon"
+							title="Save Name"
+						>
+							<FaCheck /> {/* Use checkmark icon for saving */}
+						</a>
+					</div>
+				) : (
+					// Show name with edit option if it's the current player
 					<div className="player-name-container">
-						{editingPlayerIndex === index ? (
-							<div className="edit-name-container">
-								<input
-									type="text"
-									value={newName}
-									onChange={(e) => setNewName(e.target.value)}
-									placeholder={player.name}
-									className="name-input"
-								/>
-								<a
-									onClick={() => handleNameChange(index)}
-									className="save-icon"
-									title="Save Name"
-								>
-									<FaCheck />
-								</a>
-							</div>
-						) : (
-							<>
-								<h4 className="player-name">{player.name}</h4>
-								<a
-									onClick={() => startEditing(index)}
-									className="edit-icon"
-									title="Edit Name"
-								>
-									<FaPencilAlt />
-								</a>
-							</>
+						<h4 className="player-name">{player.name}</h4>
+
+						{playerIndex === index && (
+							<a
+								onClick={() => startEditing(index)}
+								className="edit-icon"
+								title="Edit Name"
+							>
+								<FaPencilAlt />{' '}
+								{/* Use pencil icon for editing */}
+							</a>
 						)}
 					</div>
 				)}
 
-				{/* Show the hand only for the visible player */}
-				{playerIndex === index && (
-					<div className="hand">
-						{player.hand.map((card, cardIndex) => (
+				<div className="hand">
+					{playerIndex === index ? (
+						// Render the player's hand if it's their turn
+						player.hand.map((card, cardIndex) => (
 							<button
 								key={card.id}
 								className="card-button"
@@ -556,18 +577,13 @@ export const Deck = () => {
 							>
 								<Card suit={card.suit} value={card.value} />
 							</button>
-						))}
-					</div>
-				)}
+						))
+					) : (
+						<div>{/* <i>Hidden</i> */}</div>
+					)}
+				</div>
 			</div>
 		))
-	}
-	{
-		gameResult && (
-			<div className="alert alert-success text-center">
-				<h4>{gameResult}</h4>
-			</div>
-		)
 	}
 
 	const masterCard = gameState.masterSuit
@@ -576,20 +592,13 @@ export const Deck = () => {
 
 	return (
 		<div className="container-fluid">
-			{gameResult && (
-				<div>
-					<div className="alert alert-success text-center">
-						<h4>{gameResult}</h4>
-					</div>
-					<div className="text-center mt-3">
-						<button className="btn btn-primary" onClick={resetGame}>
-							Start New Game
-						</button>
-					</div>
-				</div>
-			)}
-
 			<div className="grid-container">
+				{/* Display Room ID */}
+				{roomId && (
+					<div className="room-info">
+						<h3>Room ID: {roomId}</h3> {/* Display the roomId */}
+					</div>
+				)}
 				{/* Left column */}
 				<div className="players-hand-column">
 					<div
@@ -598,175 +607,122 @@ export const Deck = () => {
 					>
 						{renderPlayers()}
 					</div>
-					<div>
-						{' '}
-						<RenderBoard gameState={gameState} />
-					</div>
-					{renderTargetSetting()}
+
+					{renderBoard()}
 				</div>
 
 				{/* Right column */}
 				<div className="other-things-column">
-					{/* Display Room ID */}
-					{roomId && (
-						<div className="room-info">
-							<h3>Room ID: {roomId}</h3>{' '}
-							{/* Display the roomId */}
-						</div>
-					)}
-
-					{masterCard && (
-						<div style={{ margin: '5px' }}>
-							<Card
-								value={null}
-								suit={masterCard.suit}
-								className="card-small"
-							/>
-						</div>
-					)}
-
 					<div className="row">
-						{' '}
-						{!gameState.masterSuit && (
-							<button
-								className="btn btn-primary deal-button"
-								onClick={dealCards}
-							>
-								Deal Cards
-							</button>
-						)}
 						<div
 							id="labels"
 							className="d-flex flex-column align-items-center"
 						>
+							{!gameState.masterSuit && (
+								<button
+									className="btn btn-primary deal-button"
+									onClick={dealCards}
+								>
+									Deal Cards
+								</button>
+							)}
+							<div className="mt-3">Round: {gameState.round}</div>
+							{masterCard && (
+								<div style={{ margin: '5px' }}>
+									<Card
+										value={null}
+										suit={masterCard.suit}
+										className="card-small"
+									/>
+								</div>
+							)}
 							<div className="mt-3">
 								<h2>Scoreboard</h2>
 							</div>
-							<h6>
-								Round {gameState.round}/{gameState.numCards}
-							</h6>
 							{/* <div className="row">
 								<div className="mt-3">
 									{renderMasterSuitSelection()}
 								</div>
 							</div> */}
-							<Scoreboard gameState={gameState} />
-							<button onClick={() => setShowRules(!showRules)}>
-								{showRules ? 'Hide Rules' : 'Show Rules'}
-							</button>
-							{showRules && (
-								<div
-									className={`rules-panel ${
-										showRules ? 'open' : ''
-									}`}
-								>
-									<div className="rules-content">
-										<h1>Judgement - Game Rules</h1>
+							<div className="scoreboard">
+								{gameState.players.map((player, index) => (
+									<div
+										key={index}
+										className={`scoreboard-item ${
+											index ===
+											gameState.currentPlayerIndex
+												? 'current-player'
+												: ''
+										}`}
+									>
+										<div className="player-info">
+											<h3
+												className={`player-name ${
+													player.points +
+														player.hand.length <
+														player.target ||
+													player.points >
+														player.target
+														? 'player-name-lost'
+														: ''
+												}`}
+											>
+												{player.name}
+											</h3>
 
-										<section>
-											<p>
-												The objective of{' '}
-												<strong>Judgement</strong> is to
-												earn points by predicting the
-												number of rounds you can win.
-												Points are awarded based on how
-												close your prediction (target)
-												is to your actual performance.
-											</p>
-										</section>
-
-										<section>
-											<h2>Setting Targets</h2>
-											<ul>
-												<li>
-													At the start of the game,
-													players are dealt a hand of
-													cards. Each player sets a
-													target for how many rounds
-													they believe they can win.{' '}
-												</li>
-												<li>
-													Players take turns setting a
-													target. The last player to
-													set a target cannot choose a
-													number that would make the
-													sum equal to the total
-													number of cards.
-												</li>
-											</ul>
-										</section>
-
-										<section>
-											<h2>Playing Cards</h2>
-											<ul>
-												<li>
-													Players play one card per
-													round. The first card played
-													in each round determines the
-													lead suit.
-												</li>
-												<li>
-													Players must follow the lead
-													suit if possible. If not,
-													they can play any card.
-												</li>
-												<li>
-													If no lead suit exists, the
-													first player to play chooses
-													any card.
-												</li>
-											</ul>
-										</section>
-
-										<section>
-											<h2>Master Suit</h2>
-											<p>
-												A <strong>Master Suit</strong>{' '}
-												is automatically selected at the
-												start of each round and is
-												stronger than the other suits.
-											</p>
-										</section>
-
-										<section>
-											<h2>Winning a Round</h2>
-											<p>
-												The player who plays the
-												highest-ranked card of the lead
-												suit earns CP, unless a card
-												from the Master Suit is played.
-											</p>
-										</section>
-
-										<section>
-											<h2>Scoring</h2>
-											<ul>
-												<li>
-													If a player they predicted,
-													they score CP equal to their
-													target, plus a bonus of 10
-													points.
-												</li>
-												<li>
-													Players are ranked based on
-													their total points at the
-													end of the game.
-												</li>
-											</ul>
-										</section>
-
-										<section>
-											<h2>End of the Game</h2>
-											<p>
-												The game continues until the
-												number of cards per hand
-												decreases to 1. Ties are
-												possible.
-											</p>
-										</section>
+											<div className="player-stats">
+												<div className="player-status">
+													{player.clientId ? (
+														<FaCheck
+															className="status-icon connected"
+															title="Connected"
+														/>
+													) : (
+														<FaTimes
+															className="status-icon disconnected"
+															title="Disconnected"
+														/>
+													)}
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														CP:
+													</span>
+													<span className="stat-value">
+														{player.points}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Points:
+													</span>
+													<span className="stat-value">
+														{player.fp}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Target:
+													</span>
+													<span className="stat-value">
+														{player.target}
+													</span>
+												</div>
+												<div className="stat">
+													<span className="stat-label">
+														Rank:
+													</span>
+													<span className="stat-value">
+														{player.rank}
+													</span>
+												</div>
+											</div>
+										</div>
 									</div>
-								</div>
-							)}
+								))}
+							</div>
+
+							{renderTargetSetting()}
 						</div>
 					</div>
 				</div>
