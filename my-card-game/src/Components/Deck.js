@@ -10,7 +10,7 @@ import { FaTimes } from 'react-icons/fa'
 import Scoreboard from './Scoreboard'
 import RenderBoard from './RenderBoard'
 
-const serverAddress = 'wss://tartan-pond-catamaran.glitch.me'
+const serverAddress = 'wss://cardgame-26r1.onrender.com'
 const client = new W3CWebSocket(serverAddress)
 // const client = new W3CWebSocket('ws://192.168.2.81:8080')
 
