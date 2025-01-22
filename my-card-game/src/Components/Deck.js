@@ -5,7 +5,7 @@ import { Card } from './Card'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-const client = new W3CWebSocket('ws://192.168.0.21:8080')
+const client = new W3CWebSocket('https://cardgame-phi-three.vercel.app/')
 
 export const Deck = () => {
 	const [gameState, setGameState] = useState({
