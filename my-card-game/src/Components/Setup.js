@@ -10,6 +10,7 @@ export const Setup = ({ onStartGame }) => {
 	const [numCards, setNumCards] = useState(4)
 	const [playerNames, setPlayerNames] = useState(['Host', 'P2', 'P3'])
 	const [showRules, setShowRules] = useState(false)
+	const [loading, setLoading] = useState(false)
 
 	const handleNumPlayersChange = (e) => {
 		const count = parseInt(e.target.value, 10)
@@ -25,6 +26,7 @@ export const Setup = ({ onStartGame }) => {
 
 	const handleHostSubmit = (e) => {
 		e.preventDefault()
+		setLoading(true)
 		onStartGame({
 			action: 'createRoom',
 			config: { numPlayers, numRounds, playerNames, numCards },
@@ -43,7 +45,11 @@ export const Setup = ({ onStartGame }) => {
 
 	return (
 		<div className="setup-container">
-			{isHost ? (
+			{loading ? (
+				<div className="loading">
+					<p>Connecting to server... Please wait.</p>
+				</div>
+			) : isHost ? (
 				<form className="form-container" onSubmit={handleHostSubmit}>
 					<div className="form-group">
 						<label>Number of Players:</label>

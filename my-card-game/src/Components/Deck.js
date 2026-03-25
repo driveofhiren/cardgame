@@ -11,8 +11,9 @@ import Scoreboard from './Scoreboard'
 import RenderBoard from './RenderBoard'
 
 const serverAddress = 'wss://tartan-pond-catamaran.glitch.me'
-const client = new W3CWebSocket(serverAddress)
-// const client = new W3CWebSocket('ws://192.168.2.81:8080')
+// const client = new W3CWebSocket(serverAddress)
+
+const client = new W3CWebSocket('ws://192.168.2.81:8080')
 
 export const Deck = () => {
 	const [gameState, setGameState] = useState(null)
@@ -68,7 +69,7 @@ export const Deck = () => {
 	useEffect(() => {
 		if (gameState) {
 			const allHandsEmpty = gameState.players.every(
-				(player) => player.hand.length === 0
+				(player) => player.hand.length === 0,
 			)
 			if (allHandsEmpty) {
 				setGameState((prevState) => ({
@@ -140,7 +141,7 @@ export const Deck = () => {
 
 			// Find out how many players have set their targets so far
 			const playersWhoSetTarget = gameState.players.filter(
-				(player) => player.target !== null
+				(player) => player.target !== null,
 			).length
 
 			// Determine if the current player is the last one to set the target for this round
@@ -164,7 +165,7 @@ export const Deck = () => {
 						numericTarget === remainingTarget
 					) {
 						alert(
-							`Invalid target! The sum of all targets cannot be equal to ${totalCards}. Please choose a different target.`
+							`Invalid target! The sum of all targets cannot be equal to ${totalCards}. Please choose a different target.`,
 						)
 					} else if (
 						numericTarget > gameState.numCards ||
@@ -227,7 +228,7 @@ export const Deck = () => {
 			const currentPlayer =
 				gameState.players[gameState.currentPlayerIndex]
 			const hasLeadSuitCard = currentPlayer.hand.some(
-				(c) => c.suit === gameState.firstCard.suit
+				(c) => c.suit === gameState.firstCard.suit,
 			)
 
 			return !hasLeadSuitCard || card.suit === gameState.firstCard.suit
@@ -301,7 +302,7 @@ export const Deck = () => {
 
 		// console.log('winning Card_' + winningCard.suit + winningCard.value)
 		const winningPlayerIndex = gameState.board.find(
-			(card) => card.card === winningCard
+			(card) => card.card === winningCard,
 		).currentPlayerIndex
 
 		if (winningPlayerIndex !== -1) {
@@ -312,7 +313,7 @@ export const Deck = () => {
 			}
 
 			const allHandsEmpty = gameState.players.every(
-				(player) => player.hand.length === 0
+				(player) => player.hand.length === 0,
 			)
 
 			if (allHandsEmpty) {
@@ -345,7 +346,7 @@ export const Deck = () => {
 				} else {
 					//decide winners with rank 1
 					const winners = updatedPlayers.filter(
-						(player) => player.rank === 1
+						(player) => player.rank === 1,
 					)
 					//give alert print message with winners name and point if they are many
 					if (winners.length > 1) {
@@ -354,11 +355,11 @@ export const Deck = () => {
 							.join(', ')
 
 						setGameResult(
-							`It's a tie! The winners are ${winnersNames} with ${winners[0].fp}`
+							`It's a tie! The winners are ${winnersNames} with ${winners[0].fp}`,
 						)
 					} else {
 						setGameResult(
-							`The winner is ${winners[0].name} with ${winners[0].fp} points!`
+							`The winner is ${winners[0].name} with ${winners[0].fp} points!`,
 						)
 					}
 					setTimeout(() => {
@@ -643,8 +644,12 @@ export const Deck = () => {
 								<h2>Scoreboard</h2>
 							</div>
 							<h6>
-								Round {gameState.round}/{gameState.numCards}
+								Round {gameState.round}/
+								{Number(gameState.round) +
+									Number(gameState.numCards) -
+									1}
 							</h6>
+
 							{/* <div className="row">
 								<div className="mt-3">
 									{renderMasterSuitSelection()}
@@ -683,7 +688,8 @@ export const Deck = () => {
 													players are dealt a hand of
 													cards. Each player sets a
 													target for how many rounds
-													they believe they can win.{' '}
+													they believe they can
+													win.{' '}
 												</li>
 												<li>
 													Players take turns setting a
