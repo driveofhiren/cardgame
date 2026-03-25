@@ -10,16 +10,10 @@ import { FaTimes } from 'react-icons/fa'
 import Scoreboard from './Scoreboard'
 import RenderBoard from './RenderBoard'
 
-<<<<<<< HEAD
 const serverAddress = 'wss://tartan-pond-catamaran.glitch.me'
 // const client = new W3CWebSocket(serverAddress)
 
 const client = new W3CWebSocket('ws://192.168.2.81:8080')
-=======
-const serverAddress = 'wss://cardgame-26r1.onrender.com'
-const client = new W3CWebSocket(serverAddress)
-// const client = new W3CWebSocket('ws://192.168.2.81:8080')
->>>>>>> 9e7f8e58c036195471c872b9ba4da643aafb107e
 
 export const Deck = () => {
 	const [gameState, setGameState] = useState(null)
