@@ -1,0 +1,151 @@
+/* CardDetection.css */
+.card-detection-container {
+	background: linear-gradient(135deg, #1e1e2f 0%, #2a2a3f 100%);
+	border-radius: 16px;
+	padding: 24px;
+	margin: 20px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.card-detection-controls {
+	margin-bottom: 20px;
+}
+
+.control-group {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	flex-wrap: wrap;
+	margin-bottom: 15px;
+}
+
+.camera-select {
+	background: rgba(0, 0, 0, 0.6);
+	color: white;
+	border: 1px solid #4caf50;
+	padding: 10px 16px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 14px;
+}
+
+.ip-input {
+	background: rgba(0, 0, 0, 0.6);
+	color: white;
+	border: 1px solid #4caf50;
+	padding: 10px 16px;
+	border-radius: 8px;
+	min-width: 300px;
+	font-size: 14px;
+}
+
+.ip-input::placeholder {
+	color: rgba(255, 255, 255, 0.5);
+}
+
+.btn {
+	padding: 10px 24px;
+	border: none;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: bold;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.btn-start {
+	background: linear-gradient(135deg, #4caf50, #45a049);
+	color: white;
+}
+
+.btn-stop {
+	background: linear-gradient(135deg, #f44336, #da190b);
+	color: white;
+}
+
+.btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.status-bar {
+	display: flex;
+	gap: 16px;
+	padding: 12px;
+	background: rgba(0, 0, 0, 0.5);
+	border-radius: 8px;
+	flex-wrap: wrap;
+}
+
+.status,
+.card-count,
+.last-card {
+	padding: 6px 12px;
+	background: rgba(76, 175, 80, 0.2);
+	border: 1px solid #4caf50;
+	border-radius: 6px;
+	color: #fff;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.last-card {
+	background: rgba(255, 193, 7, 0.2);
+	border-color: #ffc107;
+	color: #ffc107;
+}
+
+.detection-canvas {
+	width: 100%;
+	max-width: 1280px;
+	height: auto;
+	border-radius: 12px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+	background: #000;
+	margin-top: 15px;
+}
+
+.instructions {
+	margin-top: 20px;
+	padding: 16px;
+	background: rgba(0, 0, 0, 0.5);
+	border-radius: 8px;
+	color: #ccc;
+	font-size: 14px;
+}
+
+.instructions strong {
+	color: #4caf50;
+	display: block;
+	margin-bottom: 10px;
+}
+
+.instructions ul {
+	margin: 0;
+	padding-left: 20px;
+}
+
+.instructions li {
+	margin: 5px 0;
+	line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+	.card-detection-container {
+		padding: 16px;
+		margin: 10px;
+	}
+
+	.control-group {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.ip-input {
+		min-width: auto;
+	}
+
+	.status-bar {
+		flex-direction: column;
+	}
+}

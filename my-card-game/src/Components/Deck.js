@@ -6,12 +6,8 @@ import { Setup } from './Setup'
 import { w3cwebsocket as W3CWebSocket } from 'websocket'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { FaPencilAlt, FaCheck } from 'react-icons/fa'
-import { FaTimes } from 'react-icons/fa'
 import Scoreboard from './Scoreboard'
 import RenderBoard from './RenderBoard'
-
-const serverAddress = 'wss://tartan-pond-catamaran.glitch.me'
-// const client = new W3CWebSocket(serverAddress)
 
 const client = new W3CWebSocket('ws://192.168.2.81:8080')
 
@@ -25,6 +21,13 @@ export const Deck = () => {
 
 	const [editingPlayerIndex, setEditingPlayerIndex] = useState(null) // Track which player is being edited
 	const [newName, setNewName] = useState('')
+
+	const [hostTargets, setHostTargets] = useState({}) // Host sets all targets at once
+	const [useHostMode, setUseHostMode] = useState(true) // Toggle between host mode and individual mode
+
+	const [roundHistory, setRoundHistory] = useState([]) // Track scores for each completed round
+	const [lastRecordedRound, setLastRecordedRound] = useState(0) // Track which round's scores we've recorded
+	const [previousRoundFP, setPreviousRoundFP] = useState({}) // Track previous round's FP to calculate round-specific FP
 
 	const sendMessage = (action) => {
 		if (client.readyState === WebSocket.OPEN) {
@@ -56,16 +59,46 @@ export const Deck = () => {
 				}
 				sendMessage(action)
 			}
+			if (data.action === 'gameOver') {
+				// Record the final round scores before showing winner
+				const finalRoundNumber = data.round - 1
+				const finalRoundScores = data.players.map((player) => ({
+					name: player.name,
+					target: player.target,
+					points: player.points,
+					fp: player.fp - (previousRoundFP[player.name] || 0),
+					rank: player.rank,
+				}))
+
+				// Add final round to history if not already recorded
+				setRoundHistory((prev) => {
+					const alreadyRecorded = prev.some(
+						(r) => r.roundNumber === finalRoundNumber,
+					)
+					if (!alreadyRecorded) {
+						return [
+							...prev,
+							{
+								roundNumber: finalRoundNumber,
+								scores: finalRoundScores,
+							},
+						]
+					}
+					return prev
+				})
+
+				// Update game state with final scores
+				setGameState(data)
+				// Then display winners
+				const winnerNames = data.winners
+					.map((w) => w.name)
+					.join(' and ')
+				const resultMessage = `🏆 Game Over! Winner(s): ${winnerNames}`
+				setGameResult(resultMessage)
+				console.log('Game finished:', resultMessage)
+			}
 		}
 	}, [])
-	useEffect(() => {
-		if (gameState && gameState.board.length === gameState.players.length) {
-			setTimeout(() => {
-				calculatePointsAndResetBoard()
-			}, 1000)
-		}
-	}, [gameState ? gameState.board : []])
-
 	useEffect(() => {
 		if (gameState) {
 			const allHandsEmpty = gameState.players.every(
@@ -100,6 +133,44 @@ export const Deck = () => {
 		}
 	}, [gameState ? gameState.players : []])
 
+	// Track round completion and record scores
+	useEffect(() => {
+		if (gameState && gameState.round > lastRecordedRound) {
+			// A new round started, which means the previous round just ended
+			if (lastRecordedRound > 0) {
+				// Record the scores from the completed round
+				const completedRoundNumber = gameState.round - 1
+				const roundScores = gameState.players.map((player, idx) => {
+					// Calculate round-specific FP as the difference from previous round
+					const currentFP = player.fp || 0
+					const prevFP = previousRoundFP[player.name] || 0
+					const roundFP = currentFP - prevFP
+					return {
+						name: player.name,
+						target: player.target,
+						points: player.points,
+						fp: roundFP, // Round-specific FP, not cumulative
+						rank: player.rank,
+					}
+				})
+				setRoundHistory((prev) => [
+					...prev,
+					{
+						roundNumber: completedRoundNumber,
+						scores: roundScores,
+					},
+				])
+				// Update previousRoundFP for next round
+				const newPreviousRoundFP = {}
+				gameState.players.forEach((player) => {
+					newPreviousRoundFP[player.name] = player.fp
+				})
+				setPreviousRoundFP(newPreviousRoundFP)
+			}
+			setLastRecordedRound(gameState.round)
+		}
+	}, [gameState ? gameState.round : 0])
+
 	const startGame = (config) => {
 		if (client.readyState === WebSocket.OPEN) {
 			// const action = { action: 'createRoom', config }
@@ -123,88 +194,259 @@ export const Deck = () => {
 			client.send(JSON.stringify(action))
 		}
 	}
+
+	// Host mode: Set all targets at once
+	const handleHostSetAllTargets = () => {
+		// Send all targets one by one
+		if (client.readyState === WebSocket.OPEN) {
+			gameState.players.forEach((player, idx) => {
+				const playerTarget = Number(hostTargets[idx] || 0)
+				const action = {
+					action: 'setTarget',
+					playerIndex: idx,
+					target: playerTarget,
+				}
+				client.send(JSON.stringify(action))
+			})
+			// Keep host mode enabled for next round, just clear the input values
+			setHostTargets({})
+		}
+	}
+
+	const updateHostTarget = (playerIdx, value) => {
+		setHostTargets((prev) => ({
+			...prev,
+			[playerIdx]: value,
+		}))
+	}
+
+	const renderRoundHistory = () => {
+		if (roundHistory.length === 0) return null
+
+		return (
+			<div className="mt-4 round-history-container">
+				<h3 className="text-center mb-3">Round History</h3>
+				<div style={{ overflowX: 'auto' }}>
+					<table className="table table-striped table-sm table-bordered">
+						<thead className="table-dark">
+							<tr>
+								<th>Round</th>
+								{gameState &&
+									gameState.players.map((player) => (
+										<th key={player.name}>{player.name}</th>
+									))}
+							</tr>
+						</thead>
+						<tbody>
+							{roundHistory.map((round) => (
+								<React.Fragment key={round.roundNumber}>
+									{/* Target Row */}
+
+									{/* Points (CP) Row */}
+
+									{/* FP (Final Points) Row */}
+									<tr className="fp-row">
+										<td className="fw-bold bg-light">
+											R{round.roundNumber} - FP
+										</td>
+										{round.scores.map((score) => (
+											<td
+												key={`${round.roundNumber}-${score.name}-FP`}
+											>
+												{score.fp}
+											</td>
+										))}
+									</tr>
+								</React.Fragment>
+							))}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		)
+	}
+
 	if (!gameState) {
 		return <Setup onStartGame={startGame} />
 	}
 
 	const renderTargetSetting = () => {
-		if (gameState) {
-			const currentPlayer =
-				gameState.players[gameState.currentPlayerIndex]
-			// const totalCards = gameState.numCards // Assuming total number of cards is available in gameState
-			const totalCards = currentPlayer.hand.length
+		if (!gameState) return null
 
-			// Calculate sum of all targets set so far (excluding current player)
-			const sumOfTargets = gameState.players
-				.filter((player) => player.target !== null) // Only include players who have already set a target
-				.reduce((sum, player) => sum + player.target, 0)
+		const currentPlayer = gameState.players[gameState.currentPlayerIndex]
+		const totalCards = currentPlayer.hand.length
 
-			// Find out how many players have set their targets so far
-			const playersWhoSetTarget = gameState.players.filter(
-				(player) => player.target !== null,
-			).length
+		// Calculate sum of all targets set so far
+		const sumOfTargets = gameState.players
+			.filter((player) => player.target !== null)
+			.reduce((sum, player) => sum + player.target, 0)
 
-			// Determine if the current player is the last one to set the target for this round
-			const isLastPlayerToSetTarget =
-				playersWhoSetTarget === gameState.players.length - 1
+		// Find out how many players have set their targets so far
+		const playersWhoSetTarget = gameState.players.filter(
+			(player) => player.target !== null,
+		).length
 
-			const remainingTarget = totalCards - sumOfTargets
+		// Determine if the current player is the last one to set the target for this round
+		const isLastPlayerToSetTarget =
+			playersWhoSetTarget === gameState.players.length - 1
 
-			// Show the target setting UI if the current player's target is not set yet
-			if (
-				playerIndex === gameState.currentPlayerIndex &&
-				currentPlayer.target === null &&
-				gameState.players[playerIndex].hand.length !== 0
-			) {
-				const handleSetTarget = () => {
-					const numericTarget = Number(target)
+		const remainingTarget = totalCards - sumOfTargets
 
-					// Validation for the player setting the final target
+		// Host can ALWAYS set targets if they're player 0 and targets need setting (any round)
+		if (
+			playerIndex === 0 &&
+			gameState.players.some((p) => p.target === null)
+		) {
+			const validateHostTargets = () => {
+				let totalHostTargets = 0
+
+				for (let i = 0; i < gameState.players.length; i++) {
+					// Check if field is empty
 					if (
-						isLastPlayerToSetTarget &&
-						numericTarget === remainingTarget
+						hostTargets[i] === undefined ||
+						hostTargets[i] === null ||
+						hostTargets[i] === ''
 					) {
-						alert(
-							`Invalid target! The sum of all targets cannot be equal to ${totalCards}. Please choose a different target.`,
-						)
-					} else if (
-						numericTarget > gameState.numCards ||
-						numericTarget < 0
-					) {
-						alert(`Please choose valid Target!`)
-					} else {
-						setPlayerTarget(numericTarget)
+						alert(`Player ${i + 1}: Please enter a target!`)
+						return false
 					}
+					const val = Number(hostTargets[i])
+					if (val < 0 || val > gameState.numCards) {
+						alert(`Player ${i + 1}: Invalid target!`)
+						return false
+					}
+					totalHostTargets += val
 				}
 
-				return (
-					<div className="text-center mt-4">
-						<h5 className="text-warning mb-3">
-							{currentPlayer.name}, Set Your Target:
-						</h5>
-						<div className="d-inline-flex align-items-center">
-							<input
-								type="number"
-								value={currentPlayer.target}
-								onChange={(e) => setTarget(e.target.value)}
-								min="0"
-								max="10"
-								className="form-control form-control-lg me-2"
-								style={{ width: '100px' }}
-								autoFocus
-							/>
-							<button
-								onClick={handleSetTarget}
-								className="btn btn-lg btn-danger"
+				if (totalHostTargets === gameState.numCards) {
+					alert(
+						`Invalid targets! The sum of all targets cannot be equal to ${gameState.numCards}. Please adjust targets.`,
+					)
+					return false
+				}
+
+				return true
+			}
+
+			const handleSetAllTargets = () => {
+				if (validateHostTargets()) {
+					handleHostSetAllTargets()
+				}
+			}
+
+			return (
+				<div className="text-center mt-4">
+					<h5 className="text-warning mb-3">
+						Set All Player Targets:
+					</h5>
+					<div className="mb-3">
+						{gameState.players.map((player, idx) => (
+							<div
+								key={idx}
+								className="d-inline-flex align-items-center me-3 mb-2"
 							>
-								Set Target
-							</button>
-						</div>
+								<label
+									className="me-2"
+									style={{
+										minWidth: '120px',
+										color: 'white',
+									}}
+								>
+									{player.name}:
+								</label>
+								<input
+									type="number"
+									value={hostTargets[idx] || ''}
+									onChange={(e) =>
+										updateHostTarget(idx, e.target.value)
+									}
+									min="0"
+									max="10"
+									className="form-control form-control-sm"
+									style={{ width: '80px' }}
+									placeholder=""
+								/>
+							</div>
+						))}
 					</div>
+					<button
+						onClick={handleSetAllTargets}
+						className="btn btn-lg btn-success"
+					>
+						Set All Targets
+					</button>
+				</div>
+			)
+		}
+
+		// Individual target-setting mode (when it's your turn)
+		if (
+			playerIndex === gameState.currentPlayerIndex &&
+			gameState.players[playerIndex].target === null &&
+			gameState.players[playerIndex].hand.length !== 0
+		) {
+			return renderIndividualTargetUI(
+				currentPlayer,
+				totalCards,
+				sumOfTargets,
+				isLastPlayerToSetTarget,
+				remainingTarget,
+			)
+		}
+
+		return null
+	}
+
+	const renderIndividualTargetUI = (
+		currentPlayer,
+		totalCards,
+		sumOfTargets,
+		isLastPlayerToSetTarget,
+		remainingTarget,
+	) => {
+		const handleSetTarget = () => {
+			const numericTarget = Number(target)
+
+			// Validation for the player setting the final target
+			if (isLastPlayerToSetTarget && numericTarget === remainingTarget) {
+				alert(
+					`Invalid target! The sum of all targets cannot be equal to ${totalCards}. Please choose a different target.`,
 				)
+			} else if (
+				numericTarget > gameState.numCards ||
+				numericTarget < 0
+			) {
+				alert(`Please choose valid Target!`)
+			} else {
+				setPlayerTarget(numericTarget)
 			}
 		}
-		return null
+
+		return (
+			<div className="text-center mt-4">
+				<h5 className="text-warning mb-3">
+					{currentPlayer.name}, Set Your Target:
+				</h5>
+				<div className="d-inline-flex align-items-center mb-3">
+					<input
+						type="number"
+						value={target}
+						onChange={(e) => setTarget(e.target.value)}
+						min="0"
+						max="10"
+						className="form-control form-control-lg me-2"
+						style={{ width: '100px' }}
+						autoFocus
+					/>
+					<button
+						onClick={handleSetTarget}
+						className="btn btn-lg btn-danger"
+					>
+						Set Target
+					</button>
+				</div>
+			</div>
+		)
 	}
 
 	const dealCards = () => {
@@ -248,179 +490,13 @@ export const Deck = () => {
 		sendMessage(action)
 	}
 
-	const calculatePointsAndResetBoard = () => {
-		const masterSuit = gameState.masterSuit
-
-		const winningCard = gameState.board.reduce((max, card) => {
-			// Extract card values for easier comparison
-			const cardValueOrder = [
-				'2',
-				'3',
-				'4',
-				'5',
-				'6',
-				'7',
-				'8',
-				'9',
-				'10',
-				'J',
-				'Q',
-				'K',
-				'A',
-			]
-			const getValueIndex = (value) => cardValueOrder.indexOf(value)
-
-			// Check if the card's suit matches either masterSuit or the suit of the first card
-			const isMasterSuit = card.card.suit === masterSuit
-			const isInitialSuit =
-				card.card.suit === gameState.board[0].card.suit
-			const isMaxSuitMaster = max.suit === masterSuit
-			const isMaxSuitInitial = max.suit === gameState.board[0].card.suit
-
-			// Compare based on suit priority
-			if (
-				isMasterSuit &&
-				(!isMaxSuitMaster || (isMaxSuitInitial && !isInitialSuit))
-			) {
-				// Current card is masterSuit and max card is not, or max card is of initial suit only
-				return card.card
-			} else if (isInitialSuit && !isMaxSuitMaster && !isMaxSuitInitial) {
-				// Current card is of initial suit and max card is neither masterSuit nor initial suit
-				return card.card
-			} else if (
-				isMasterSuit === isMaxSuitMaster &&
-				isInitialSuit === isMaxSuitInitial
-			) {
-				// Both cards are of the same suit priority, compare their values
-				if (getValueIndex(card.card.value) > getValueIndex(max.value)) {
-					return card.card
-				}
-			}
-
-			return max
-		}, gameState.board[0].card)
-
-		// console.log('winning Card_' + winningCard.suit + winningCard.value)
-		const winningPlayerIndex = gameState.board.find(
-			(card) => card.card === winningCard,
-		).currentPlayerIndex
-
-		if (winningPlayerIndex !== -1) {
-			const updatedPlayers = [...gameState.players]
-			updatedPlayers[winningPlayerIndex] = {
-				...updatedPlayers[winningPlayerIndex],
-				points: updatedPlayers[winningPlayerIndex].points + 1,
-			}
-
-			const allHandsEmpty = gameState.players.every(
-				(player) => player.hand.length === 0,
-			)
-
-			if (allHandsEmpty) {
-				updatedPlayers.forEach((player) => {
-					if (player.points === player.target)
-						player.fp = player.fp + player.target + 10
-				})
-
-				const ranks = {}
-				const sortedPlayers = updatedPlayers
-					.slice()
-					.sort((a, b) => b.fp - a.fp)
-				let currentRank = 1
-
-				sortedPlayers.forEach((player) => {
-					const fp = player.fp
-					if (!ranks[fp]) {
-						ranks[fp] = currentRank
-						currentRank++
-					}
-				})
-
-				updatedPlayers.forEach((player) => {
-					player.rank = ranks[player.fp]
-				})
-
-				if (gameState.numCards > 1) {
-					//decrement it
-					gameState.numCards--
-				} else {
-					//decide winners with rank 1
-					const winners = updatedPlayers.filter(
-						(player) => player.rank === 1,
-					)
-					//give alert print message with winners name and point if they are many
-					if (winners.length > 1) {
-						const winnersNames = winners
-							.map((winner) => winner.name)
-							.join(', ')
-
-						setGameResult(
-							`It's a tie! The winners are ${winnersNames} with ${winners[0].fp}`,
-						)
-					} else {
-						setGameResult(
-							`The winner is ${winners[0].name} with ${winners[0].fp} points!`,
-						)
-					}
-					setTimeout(() => {
-						resetGame()
-					}, 10000)
-				}
-				//make all player point 0
-				updatedPlayers.forEach((player) => {
-					player.target = null
-					player.points = 0
-				})
-
-				//logic for deciding mastercard based on max target
-				// let MasterCardPlayer = null
-				// let maxTarget = -Infinity // Initialize maxTarget to a very low value
-
-				// updatedPlayers.forEach((player, index) => {
-				// 	if (player.target > maxTarget) {
-				// 		maxTarget = player.target
-				// 		MasterCardPlayer = index
-				// 	}
-				// })
-				gameState.currentPlayerIndex =
-					(gameState.round - 1) % gameState.players.length
-
-				const action = {
-					action: 'calculatePointsAndResetBoard',
-					masterCardplayer: null,
-					currentPlayerIndex: gameState.currentPlayerIndex,
-					players: updatedPlayers,
-					round: gameState.round,
-					masterSuit: null,
-					numCards: gameState.numCards,
-				}
-				sendMessage(action)
-			} else {
-				// let MasterCardPlayer = null
-				// gameState.players.forEach((player, index) => {
-				// 	if (player.target === 5) {
-				// 		MasterCardPlayer = index
-				// 	}
-				// })
-
-				setGameState((prevState) => ({
-					...prevState,
-					players: updatedPlayers,
-					currentPlayerIndex: winningPlayerIndex,
-				}))
-
-				const action = {
-					action: 'calculatePointsAndResetBoard',
-					masterCardplayer: gameState.masterCardplayer,
-					currentPlayerIndex: winningPlayerIndex,
-					players: updatedPlayers,
-					round: gameState.round,
-					masterSuit: gameState.masterSuit,
-					numCards: gameState.numCards,
-				}
-				sendMessage(action)
-			}
-		}
+	const handleCardDetected = (detectedInfo) => {
+		// Card detection now happens in Python backend
+		// This function is kept for compatibility but is no longer used
+		console.log(
+			'[DEPRECATED] Frontend card detection handler - use Python service instead',
+			detectedInfo,
+		)
 	}
 
 	const chooseMasterSuit = (suit) => {
@@ -505,70 +581,98 @@ export const Deck = () => {
 			setNewName('') // Reset newName when starting to edit
 		}
 
-		return gameState.players.map((player, index) => (
-			<div key={index} className="player-container">
-				{/* Conditionally render player name */}
-				{playerIndex === index && (
-					<div className="player-name-container">
-						{editingPlayerIndex === index ? (
-							<div className="edit-name-container">
-								<input
-									type="text"
-									value={newName}
-									onChange={(e) => setNewName(e.target.value)}
-									placeholder={player.name}
-									className="name-input"
-								/>
-								<a
-									onClick={() => handleNameChange(index)}
-									className="save-icon"
-									title="Save Name"
-								>
-									<FaCheck />
-								</a>
-							</div>
-						) : (
-							<>
-								<h4 className="player-name">{player.name}</h4>
-								<a
-									onClick={() => startEditing(index)}
-									className="edit-icon"
-									title="Edit Name"
-								>
-									<FaPencilAlt />
-								</a>
-							</>
-						)}
-					</div>
-				)}
+		// return gameState.players.map((player, index) => (
+		// 	<div key={index} className="player-container">
+		// 		{/* Conditionally render player name */}
+		// 		{playerIndex === index && (
+		// 			<div className="player-name-container">
+		// 				{gameState.currentPlayerIndex === index && (
+		// 					<div
+		// 						style={{
+		// 							fontSize: '14px',
+		// 							fontWeight: 'bold',
+		// 							color: '#ff9800',
+		// 							marginBottom: '8px',
+		// 							textAlign: 'center',
+		// 						}}
+		// 					>
+		// 						🎥 YOUR TURN - CAMERA READY
+		// 					</div>
+		// 				)}
+		// 				{editingPlayerIndex === index ? (
+		// 					<div className="edit-name-container">
+		// 						<input
+		// 							type="text"
+		// 							value={newName}
+		// 							onChange={(e) => setNewName(e.target.value)}
+		// 							placeholder={player.name}
+		// 							className="name-input"
+		// 						/>
+		// 						<a
+		// 							onClick={() => handleNameChange(index)}
+		// 							className="save-icon"
+		// 							title="Save Name"
+		// 						>
+		// 							<FaCheck />
+		// 						</a>
+		// 					</div>
+		// 				) : (
+		// 					<>
+		// 						<h4 className="player-name">{player.name}</h4>
+		// 						<a
+		// 							onClick={() => startEditing(index)}
+		// 							className="edit-icon"
+		// 							title="Edit Name"
+		// 						>
+		// 							<FaPencilAlt />
+		// 						</a>
+		// 					</>
+		// 				)}
+		// 			</div>
+		// 		)}
 
-				{/* Show the hand only for the visible player */}
-				{playerIndex === index && (
-					<div className="hand">
-						{player.hand.map((card, cardIndex) => (
-							<button
-								key={card.id}
-								className="card-button"
-								onClick={() => playCard(cardIndex)}
-								disabled={!canPlayCard(card, index)}
-								style={{
-									opacity: canPlayCard(card, index) ? 1 : 0.5,
-								}}
-							>
-								<Card suit={card.suit} value={card.value} />
-							</button>
-						))}
-					</div>
-				)}
-			</div>
-		))
-	}
-	{
-		gameResult && (
-			<div className="alert alert-success text-center">
-				<h4>{gameResult}</h4>
-			</div>
-		)
+		// 		{/* Show the hand only for the visible player - CAMERA DETECTION ONLY */}
+		// 		{playerIndex === index && (
+		// 			<div className="hand">
+		// 				{gameState.currentPlayerIndex === index && (
+		// 					<div
+		// 						style={{
+		// 							fontSize: '12px',
+		// 							color: '#ff6b6b',
+		// 							marginBottom: '8px',
+		// 						}}
+		// 					>
+		// 						🎥 CAMERA DETECTION MODE - Cards are auto-played
+		// 						from camera
+		// 					</div>
+		// 				)}
+		// 				{player.hand.map((card, cardIndex) => (
+		// 					<div
+		// 						key={card.id}
+		// 						className="card-display"
+		// 						style={{
+		// 							opacity: canPlayCard(card, index) ? 1 : 0.5,
+		// 							border: canPlayCard(card, index)
+		// 								? '2px solid #28a745'
+		// 								: 'none',
+		// 							borderRadius: '4px',
+		// 							padding: '4px',
+		// 							cursor: 'default',
+		// 							transition: 'all 0.2s',
+		// 						}}
+		// 						title={
+		// 							canPlayCard(card, index)
+		// 								? 'Can be detected by camera'
+		// 								: 'Invalid play'
+		// 						}
+		// 					>
+		// 						<Card suit={card.suit} value={card.value} />
+		// 					</div>
+		// 				))}
+		// 			</div>
+		// 		)}
+		// 	</div>
+		// ))
 	}
 
 	const masterCard = gameState.masterSuit
@@ -773,6 +877,7 @@ export const Deck = () => {
 									</div>
 								</div>
 							)}
+							{renderRoundHistory()}
 						</div>
 					</div>
 				</div>
