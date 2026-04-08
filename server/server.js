@@ -52,7 +52,7 @@ wss.on('connection', function connection(ws) {
 					JSON.stringify({
 						action: 'error',
 						message: 'Room does not exist!',
-					})
+					}),
 				)
 				return
 			}
@@ -74,7 +74,7 @@ wss.on('connection', function connection(ws) {
 					JSON.stringify({
 						action: 'error',
 						message: 'Room is full!',
-					})
+					}),
 				)
 				return
 			}
@@ -123,7 +123,7 @@ wss.on('connection', function connection(ws) {
 
 				// Delete the room if no players are left with WebSocket connections
 				const activePlayers = room.players.filter(
-					(player) => player.clientId !== null
+					(player) => player.clientId !== null,
 				)
 				if (activePlayers.length === 0) {
 					delete rooms[roomId]
@@ -162,8 +162,8 @@ function setupGame(config, ws, roomId) {
 		numCards: numCards,
 		totalPlayers: numPlayers,
 		roomId: roomId,
-		playedCardsThisRound: [],  // Track unique cards per round
-		pauseDetectionUntil: 0,  // Timestamp when to pause card detection (0 = no pause)
+		playedCardsThisRound: [], // Track unique cards per round
+		pauseDetectionUntil: 0, // Timestamp when to pause card detection (0 = no pause)
 	}
 
 	const playerGameState = { ...rooms[roomId], playerIndex: 0 }
@@ -196,7 +196,7 @@ function updateGameState(roomId, data) {
 			data.players,
 			data.masterCardplayer,
 			data.round,
-			data.numCards
+			data.numCards,
 		)
 	}
 	if (data.action === 'updatePlayerName') {
@@ -220,7 +220,7 @@ function setPlayerTarget(roomId, playerIndex, target) {
 	}
 
 	const allTargetsSet = gameState.players.every(
-		(player) => player.target !== null
+		(player) => player.target !== null,
 	)
 	gameState.currentPlayerIndex =
 		(gameState.currentPlayerIndex + 1) % gameState.players.length
@@ -254,7 +254,7 @@ function dealCards(roomId) {
 		'A',
 	]
 	const deck = suits.flatMap((suit) =>
-		values.map((value) => ({ id: `${suit}-${value}`, suit, value }))
+		values.map((value) => ({ id: `${suit}-${value}`, suit, value })),
 	)
 
 	for (let i = deck.length - 1; i > 0; i--) {
@@ -265,7 +265,7 @@ function dealCards(roomId) {
 	gameState.players.forEach((player, index) => {
 		gameState.players[index].hand = deck.slice(
 			index * gameState.numCards,
-			(index + 1) * gameState.numCards
+			(index + 1) * gameState.numCards,
 		)
 	})
 	console.log(gameState.players)
@@ -317,7 +317,7 @@ function calculatePointsAndResetBoard(
 	players,
 	masterCardplayer,
 	round,
-	numCards
+	numCards,
 ) {
 	const gameState = rooms[roomId]
 	gameState.players = players
@@ -352,7 +352,7 @@ function generateRoomId() {
 	let roomId = ''
 	for (let i = 0; i < 4; i++) {
 		roomId += characters.charAt(
-			Math.floor(Math.random() * characters.length)
+			Math.floor(Math.random() * characters.length),
 		)
 	}
 	return roomId
@@ -360,7 +360,21 @@ function generateRoomId() {
 
 // Helper: Determine winning card from board
 function getWinningCard(board, masterSuit, firstCard) {
-	const cardValueOrder = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+	const cardValueOrder = [
+		'2',
+		'3',
+		'4',
+		'5',
+		'6',
+		'7',
+		'8',
+		'9',
+		'10',
+		'J',
+		'Q',
+		'K',
+		'A',
+	]
 	const getValueIndex = (value) => cardValueOrder.indexOf(value)
 
 	return board.reduce((max, card) => {
@@ -369,11 +383,17 @@ function getWinningCard(board, masterSuit, firstCard) {
 		const isMaxSuitMaster = max.suit === masterSuit
 		const isMaxSuitInitial = max.suit === firstCard.suit
 
-		if (isMasterSuit && (!isMaxSuitMaster || (isMaxSuitInitial && !isInitialSuit))) {
+		if (
+			isMasterSuit &&
+			(!isMaxSuitMaster || (isMaxSuitInitial && !isInitialSuit))
+		) {
 			return card.card
 		} else if (isInitialSuit && !isMaxSuitMaster && !isMaxSuitInitial) {
 			return card.card
-		} else if (isMasterSuit === isMaxSuitMaster && isInitialSuit === isMaxSuitInitial) {
+		} else if (
+			isMasterSuit === isMaxSuitMaster &&
+			isInitialSuit === isMaxSuitInitial
+		) {
 			if (getValueIndex(card.card.value) > getValueIndex(max.value)) {
 				return card.card
 			}
@@ -391,9 +411,17 @@ function handleDetectedCard(roomId, detectedRank, detectedSuit, confidence) {
 	// Check if detection is paused (after round completion)
 	const now = Date.now()
 	if (gameState.pauseDetectionUntil > now) {
-		const secondsLeft = Math.ceil((gameState.pauseDetectionUntil - now) / 1000)
-		console.log(`\n  ⏸️  DETECTION PAUSED for new round (${secondsLeft}s left)`)
-		return { success: false, message: `Detection paused. Please wait ${secondsLeft}s for next round.`, confidence }
+		const secondsLeft = Math.ceil(
+			(gameState.pauseDetectionUntil - now) / 1000,
+		)
+		console.log(
+			`\n  ⏸️  DETECTION PAUSED for new round (${secondsLeft}s left)`,
+		)
+		return {
+			success: false,
+			message: `Detection paused. Please wait ${secondsLeft}s for next round.`,
+			confidence,
+		}
 	}
 
 	const currentPlayerIndex = gameState.currentPlayerIndex
@@ -407,39 +435,62 @@ function handleDetectedCard(roomId, detectedRank, detectedSuit, confidence) {
 	const card = {
 		value: detectedRank,
 		suit: detectedSuit,
-		id: `${detectedSuit}-${detectedRank}`
+		id: `${detectedSuit}-${detectedRank}`,
 	}
-	
+
 	console.log(`    ✓ Using detected card: ${card.value}${card.suit}`)
 
 	// Check if card already played THIS ROUND (prevent duplicates in same round)
 	const cardAlreadyPlayedThisRound = gameState.playedCardsThisRound.some(
-		(playedCard) => playedCard.value === card.value && playedCard.suit === card.suit
+		(playedCard) =>
+			playedCard.value === card.value && playedCard.suit === card.suit,
 	)
-	
+
 	if (cardAlreadyPlayedThisRound) {
-		console.log(`    ❌ DUPLICATE THIS ROUND - ${card.value}${card.suit} already played!`)
-		console.log(`    Cards played this round: ${gameState.playedCardsThisRound.map(c => `${c.value}${c.suit}`).join(', ')}`)
-		return { success: false, message: 'Card already played in this round', confidence }
+		console.log(
+			`    ❌ DUPLICATE THIS ROUND - ${card.value}${card.suit} already played!`,
+		)
+		console.log(
+			`    Cards played this round: ${gameState.playedCardsThisRound.map((c) => `${c.value}${c.suit}`).join(', ')}`,
+		)
+		return {
+			success: false,
+			message: 'Card already played in this round',
+			confidence,
+		}
 	}
-	
+
 	console.log(`    ✓ Card is unique this round`)
 
 	// Check if round already has all players' cards
 	if (gameState.board.length >= gameState.players.length) {
-		console.log(`    ❌ BOARD FULL - Already have ${gameState.board.length} cards (need ${gameState.players.length})`)
-		return { success: false, message: 'All players already played this round', confidence }
+		console.log(
+			`    ❌ BOARD FULL - Already have ${gameState.board.length} cards (need ${gameState.players.length})`,
+		)
+		return {
+			success: false,
+			message: 'All players already played this round',
+			confidence,
+		}
 	}
-	
-	console.log(`    ✓ Board space available (${gameState.board.length + 1}/${gameState.players.length})`)
+
+	console.log(
+		`    ✓ Board space available (${gameState.board.length + 1}/${gameState.players.length})`,
+	)
 
 	// Check suit rules - if not first card, validate suit constraint
 	if (gameState.firstCard) {
-		console.log(`    Checking suit constraint (first card: ${gameState.firstCard.value}${gameState.firstCard.suit})`)
+		console.log(
+			`    Checking suit constraint (first card: ${gameState.firstCard.value}${gameState.firstCard.suit})`,
+		)
 		// Note: We're accepting the camera detection directly, so we just log what would be the rule
 		if (card.suit !== gameState.firstCard.suit) {
-			console.log(`    ⚠️  Card is different suit than first card (${card.suit} vs ${gameState.firstCard.suit})`)
-			console.log(`    → (Camera detection accepted directly - no hand validation)`)
+			console.log(
+				`    ⚠️  Card is different suit than first card (${card.suit} vs ${gameState.firstCard.suit})`,
+			)
+			console.log(
+				`    → (Camera detection accepted directly - no hand validation)`,
+			)
 		} else {
 			console.log(`    ✓ Card matches lead suit`)
 		}
@@ -455,35 +506,55 @@ function handleDetectedCard(roomId, detectedRank, detectedSuit, confidence) {
 
 	// Add card to board
 	gameState.board.push({ currentPlayerIndex, cardIndex: -1, card })
-	
+
 	// Add card to played cards tracking (per round)
 	gameState.playedCardsThisRound.push(card)
-	console.log(`    → Added to played cards this round: ${gameState.playedCardsThisRound.map(c => `${c.value}${c.suit}`).join(', ')}`)
-	
+	console.log(
+		`    → Added to played cards this round: ${gameState.playedCardsThisRound.map((c) => `${c.value}${c.suit}`).join(', ')}`,
+	)
+
 	// Remove one card from player's hand (any card - doesn't matter which)
 	if (gameState.players[currentPlayerIndex].hand.length > 0) {
 		gameState.players[currentPlayerIndex].hand.pop()
-		console.log(`    ✓ Removed card from ${currentPlayer.name}'s hand (${gameState.players[currentPlayerIndex].hand.length} cards left)`)
+		console.log(
+			`    ✓ Removed card from ${currentPlayer.name}'s hand (${gameState.players[currentPlayerIndex].hand.length} cards left)`,
+		)
 	}
-	
-	console.log(`    ✓ Card played! Board now has ${gameState.board.length}/${gameState.players.length} cards`)
+
+	console.log(
+		`    ✓ Card played! Board now has ${gameState.board.length}/${gameState.players.length} cards`,
+	)
 
 	// Check if all players have played
 	if (gameState.board.length === gameState.players.length) {
 		console.log(`    ✓ All players have played - calculating winner...`)
 		// All players played - calculate winner
-		const winningCard = getWinningCard(gameState.board, gameState.masterSuit, gameState.firstCard)
-		const winningPlayerIndex = gameState.board.find((c) => c.card === winningCard).currentPlayerIndex
+		const winningCard = getWinningCard(
+			gameState.board,
+			gameState.masterSuit,
+			gameState.firstCard,
+		)
+		const winningPlayerIndex = gameState.board.find(
+			(c) => c.card === winningCard,
+		).currentPlayerIndex
 
-		console.log(`    Winner: ${gameState.players[winningPlayerIndex].name} with ${winningCard.value}${winningCard.suit}`)
+		console.log(
+			`    Winner: ${gameState.players[winningPlayerIndex].name} with ${winningCard.value}${winningCard.suit}`,
+		)
 
 		// Update points
 		gameState.players[winningPlayerIndex].points += 1
-		console.log(`    Points: ${gameState.players[winningPlayerIndex].name} = ${gameState.players[winningPlayerIndex].points}`)
+		console.log(
+			`    Points: ${gameState.players[winningPlayerIndex].name} = ${gameState.players[winningPlayerIndex].points}`,
+		)
 
 		// Check if round is over (all players out of cards)
-		const allHandsEmpty = gameState.players.every((p) => p.hand.length === 0)
-		console.log(`    Hands remaining: ${gameState.players.map(p => `${p.name}:${p.hand.length}`).join(', ')}`)
+		const allHandsEmpty = gameState.players.every(
+			(p) => p.hand.length === 0,
+		)
+		console.log(
+			`    Hands remaining: ${gameState.players.map((p) => `${p.name}:${p.hand.length}`).join(', ')}`,
+		)
 
 		if (allHandsEmpty) {
 			console.log(`    💯 Round complete - all hands empty`)
@@ -491,12 +562,16 @@ function handleDetectedCard(roomId, detectedRank, detectedSuit, confidence) {
 			gameState.players.forEach((player) => {
 				if (player.points === player.target) {
 					player.fp = player.fp + player.target + 10
-					console.log(`    ✓ ${player.name}: Points matched target! FP += ${player.target + 10}`)
+					console.log(
+						`    ✓ ${player.name}: Points matched target! FP += ${player.target + 10}`,
+					)
 				}
 			})
 
 			const ranks = {}
-			const sortedPlayers = gameState.players.slice().sort((a, b) => b.fp - a.fp)
+			const sortedPlayers = gameState.players
+				.slice()
+				.sort((a, b) => b.fp - a.fp)
 			let currentRank = 1
 			sortedPlayers.forEach((player) => {
 				const fp = player.fp
@@ -513,11 +588,15 @@ function handleDetectedCard(roomId, detectedRank, detectedSuit, confidence) {
 			// Check if game is over
 			if (gameState.numCards > 1) {
 				gameState.numCards--
-				console.log(`    → Next round (${gameState.numCards} cards left)`)
+				console.log(
+					`    → Next round (${gameState.numCards} cards left)`,
+				)
 			} else {
 				// Game over - winners determined
 				const winners = gameState.players.filter((p) => p.rank === 1)
-				console.log(`    🏆 GAME OVER - Winners: ${winners.map(w => w.name).join(', ')}`)
+				console.log(
+					`    🏆 GAME OVER - Winners: ${winners.map((w) => w.name).join(', ')}`,
+				)
 				broadcastGameState(roomId, { action: 'gameOver', winners })
 				return { success: true, message: 'Game over', confidence }
 			}
@@ -528,14 +607,19 @@ function handleDetectedCard(roomId, detectedRank, detectedSuit, confidence) {
 				player.points = 0
 			})
 			gameState.round++
-			gameState.currentPlayerIndex = (gameState.round - 1) % gameState.players.length
+			gameState.currentPlayerIndex =
+				(gameState.round - 1) % gameState.players.length
 			gameState.board = []
 			gameState.firstCard = null
 			gameState.masterSuit = null
-			gameState.playedCardsThisRound = []  // RESET for new round - cards can be reused
-			gameState.pauseDetectionUntil = Date.now() + 5000  // Pause detection for 5 seconds
-			console.log(`    → New round started! Pausing detection until next round ready.`)
-			console.log(`    → Played cards cleared for round ${gameState.round}`)
+			gameState.playedCardsThisRound = [] // RESET for new round - cards can be reused
+			gameState.pauseDetectionUntil = Date.now() + 5000 // Pause detection for 5 seconds
+			console.log(
+				`    → New round started! Pausing detection until next round ready.`,
+			)
+			console.log(
+				`    → Played cards cleared for round ${gameState.round}`,
+			)
 		} else {
 			// Continue to next player in SAME round
 			gameState.currentPlayerIndex = winningPlayerIndex
@@ -545,12 +629,20 @@ function handleDetectedCard(roomId, detectedRank, detectedSuit, confidence) {
 		}
 	} else {
 		// Move to next player
-		gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length
-		console.log(`    → Next player: ${gameState.players[gameState.currentPlayerIndex].name}`)
+		gameState.currentPlayerIndex =
+			(gameState.currentPlayerIndex + 1) % gameState.players.length
+		console.log(
+			`    → Next player: ${gameState.players[gameState.currentPlayerIndex].name}`,
+		)
 	}
 
 	broadcastGameState(roomId)
-	return { success: true, message: 'Card played', confidence, playerName: currentPlayer.name }
+	return {
+		success: true,
+		message: 'Card played',
+		confidence,
+		playerName: currentPlayer.name,
+	}
 }
 
 console.log(`Judgement is Live`)
@@ -569,15 +661,21 @@ app.post('/detect-card', (req, res) => {
 
 	if (!roomId || !rank || !suit || confidence === undefined) {
 		console.log('❌ ERROR: Missing required fields')
-		console.log(`   Received: roomId=${roomId}, rank=${rank}, suit=${suit}, confidence=${confidence}`)
+		console.log(
+			`   Received: roomId=${roomId}, rank=${rank}, suit=${suit}, confidence=${confidence}`,
+		)
 		console.log('='.repeat(70) + '\n')
-		return res.status(400).json({ error: 'Missing required fields: roomId, rank, suit, confidence' })
+		return res
+			.status(400)
+			.json({
+				error: 'Missing required fields: roomId, rank, suit, confidence',
+			})
 	}
 
 	// Check if room exists - use specified room or fallback to any available room
 	let actualRoomId = roomId
 	let gameState = rooms[roomId]
-	
+
 	if (!gameState) {
 		// Try to find any available room
 		const availableRooms = Object.keys(rooms)
@@ -587,38 +685,44 @@ app.post('/detect-card', (req, res) => {
 			console.log(`⚠️  FALLBACK: Room "${roomId}" not found`)
 			console.log(`   Using available room: ${actualRoomId}`)
 		} else {
-			console.log(`❌ ERROR: Room "${roomId}" not found and no rooms available`)
+			console.log(
+				`❌ ERROR: Room "${roomId}" not found and no rooms available`,
+			)
 			console.log(`   Available rooms: NONE`)
 			console.log('='.repeat(70) + '\n')
-			return res.status(400).json({ success: false, message: 'No rooms available' })
+			return res
+				.status(400)
+				.json({ success: false, message: 'No rooms available' })
 		}
 	}
 
 	console.log(`✓ Room found: ${actualRoomId}`)
 	console.log(`  Players: ${gameState.players.length}`)
 	console.log(`  Current player index: ${gameState.currentPlayerIndex}`)
-	console.log(`  Current player: ${gameState.players[gameState.currentPlayerIndex].name}`)
-	
+	console.log(
+		`  Current player: ${gameState.players[gameState.currentPlayerIndex].name}`,
+	)
+
 	const result = handleDetectedCard(actualRoomId, rank, suit, confidence)
-	
-	console.log(`📋 Result:`);
+
+	console.log(`📋 Result:`)
 	console.log(`  Success: ${result.success}`)
 	console.log(`  Message: ${result.message}`)
 	if (result.playerName) console.log(`  Player: ${result.playerName}`)
 	console.log('='.repeat(70) + '\n')
-	
+
 	if (result.success) {
-		res.json({ 
-			success: true, 
-			message: result.message, 
+		res.json({
+			success: true,
+			message: result.message,
 			playerName: result.playerName,
-			pauseUntil: gameState.pauseDetectionUntil
+			pauseUntil: gameState.pauseDetectionUntil,
 		})
 	} else {
-		res.status(400).json({ 
-			success: false, 
+		res.status(400).json({
+			success: false,
 			message: result.message,
-			pauseUntil: gameState.pauseDetectionUntil
+			pauseUntil: gameState.pauseDetectionUntil,
 		})
 	}
 })

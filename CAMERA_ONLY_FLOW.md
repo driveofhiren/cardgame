@@ -132,14 +132,14 @@
 
 ## Key Differences From Manual Play
 
-| Aspect | Manual | Camera-Only |
-|--------|--------|------------|
-| Card input | Player clicks button | Camera detects |
-| Validation | Frontend checks | Backend checks |
-| Board update | Frontend updates | Backend broadcasts |
-| Turn tracking | Manual | Automatic |
-| Point calculation | Frontend (❌ OLD) | Backend (✅ NOW) |
-| Player interaction | Click cards | Watch & wait |
+| Aspect             | Manual               | Camera-Only        |
+| ------------------ | -------------------- | ------------------ |
+| Card input         | Player clicks button | Camera detects     |
+| Validation         | Frontend checks      | Backend checks     |
+| Board update       | Frontend updates     | Backend broadcasts |
+| Turn tracking      | Manual               | Automatic          |
+| Point calculation  | Frontend (❌ OLD)    | Backend (✅ NOW)   |
+| Player interaction | Click cards          | Watch & wait       |
 
 ## Frontend Display Now Shows
 

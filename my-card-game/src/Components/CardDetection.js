@@ -15,15 +15,15 @@ const CARD_THRESH = 30
 
 const RANK_IMAGES = {
 	A: 'Ace',
-	'2': 'Two',
-	'3': 'Three',
-	'4': 'Four',
-	'5': 'Five',
-	'6': 'Six',
-	'7': 'Seven',
-	'8': 'Eight',
-	'9': 'Nine',
-	'10': 'Ten',
+	2: 'Two',
+	3: 'Three',
+	4: 'Four',
+	5: 'Five',
+	6: 'Six',
+	7: 'Seven',
+	8: 'Eight',
+	9: 'Nine',
+	10: 'Ten',
 	J: 'Jack',
 	Q: 'Queen',
 	K: 'King',
@@ -46,7 +46,9 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 	const [isEnabled, setIsEnabled] = useState(false)
 	const [lastCard, setLastCard] = useState(null)
 	const [cameraSource, setCameraSource] = useState('local')
-	const [ipCameraUrl, setIpCameraUrl] = useState('https://192.168.2.106:8080/')
+	const [ipCameraUrl, setIpCameraUrl] = useState(
+		'https://192.168.2.106:8080/',
+	)
 	const [cameraStatus, setCameraStatus] = useState('Ready')
 	const frameCountRef = useRef(0)
 	const refImagesRef = useRef(null)
@@ -92,7 +94,9 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 			}
 
 			refImagesRef.current = refs
-			console.log(`✅ Loaded ${Object.keys(refs).length} reference images`)
+			console.log(
+				`✅ Loaded ${Object.keys(refs).length} reference images`,
+			)
 		}
 
 		initRefs()
@@ -124,7 +128,11 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 				} else {
 					setCameraStatus('Requesting access...')
 					const stream = await navigator.mediaDevices.getUserMedia({
-						video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+						video: {
+							facingMode: 'environment',
+							width: { ideal: 1280 },
+							height: { ideal: 720 },
+						},
 					})
 					videoRef.current.srcObject = stream
 					videoRef.current.onloadedmetadata = () => {
@@ -177,7 +185,10 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 				let sum = 0
 				for (let ky = -2; ky <= 2; ky++) {
 					for (let kx = -2; kx <= 2; kx++) {
-						sum += gray[(y + ky) * width + (x + kx)] * kernel[kx + 2] * kernel[ky + 2]
+						sum +=
+							gray[(y + ky) * width + (x + kx)] *
+							kernel[kx + 2] *
+							kernel[ky + 2]
 					}
 				}
 				blur[y * width + x] = Math.min(255, Math.round(sum / 256))
@@ -185,7 +196,8 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 		}
 
 		// Adaptive threshold - sample background level from top center
-		const bkgLevel = blur[Math.floor(height / 100) * width + Math.floor(width / 2)]
+		const bkgLevel =
+			blur[Math.floor(height / 100) * width + Math.floor(width / 2)]
 		const threshLevel = Math.min(255, bkgLevel + BKG_THRESH)
 
 		// Binary threshold
@@ -223,11 +235,22 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 			for (let x = 0; x < width; x++) {
 				const idx = y * width + x
 				if (!visited[idx] && thresh[idx] === 255) {
-					const contour = traceContour(thresh, visited, width, height, x, y)
+					const contour = traceContour(
+						thresh,
+						visited,
+						width,
+						height,
+						x,
+						y,
+					)
 					if (contour && contour.length > 20) {
 						const area = contour.length
 						const bbox = getBoundingBox(contour)
-						if (area > CARD_MIN_AREA && area < CARD_MAX_AREA && hasCardRatio(bbox)) {
+						if (
+							area > CARD_MIN_AREA &&
+							area < CARD_MAX_AREA &&
+							hasCardRatio(bbox)
+						) {
 							contours.push({ points: contour, bbox, area })
 						}
 					}
@@ -266,7 +289,10 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 
 	// Get bounding box from contour points
 	const getBoundingBox = (contour) => {
-		let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+		let minX = Infinity,
+			maxX = -Infinity,
+			minY = Infinity,
+			maxY = -Infinity
 
 		for (const [x, y] of contour) {
 			minX = Math.min(minX, x)
@@ -306,10 +332,10 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 			new ImageData(
 				imageData.data.slice(0, imageData.data.length),
 				imageData.width,
-				imageData.height
+				imageData.height,
 			),
 			-x,
-			-y
+			-y,
 		)
 
 		// Scale to 200x300
@@ -390,14 +416,25 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 		let bestRankDiff = 10000
 		let bestSuitDiff = 10000
 
-		if (!refImagesRef.current) return { rank: bestRank, suit: bestSuit, rankDiff: bestRankDiff, suitDiff: bestSuitDiff }
+		if (!refImagesRef.current)
+			return {
+				rank: bestRank,
+				suit: bestSuit,
+				rankDiff: bestRankDiff,
+				suitDiff: bestSuitDiff,
+			}
 
 		// Match rank
 		for (const rank of RANKS) {
 			if (!refImagesRef.current[rank]) continue
 			const refData = refImagesRef.current[rank].data
 
-			const diff = imageDifference(rankImg, refData, RANK_WIDTH, RANK_HEIGHT)
+			const diff = imageDifference(
+				rankImg,
+				refData,
+				RANK_WIDTH,
+				RANK_HEIGHT,
+			)
 
 			if (diff < bestRankDiff) {
 				bestRankDiff = diff
@@ -410,7 +447,12 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 			if (!refImagesRef.current[suit]) continue
 			const refData = refImagesRef.current[suit].data
 
-			const diff = imageDifference(suitImg, refData, SUIT_WIDTH, SUIT_HEIGHT)
+			const diff = imageDifference(
+				suitImg,
+				refData,
+				SUIT_WIDTH,
+				SUIT_HEIGHT,
+			)
 
 			if (diff < bestSuitDiff) {
 				bestSuitDiff = diff
@@ -422,9 +464,16 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 		if (bestRankDiff > RANK_DIFF_MAX) bestRank = 'Unknown'
 		if (bestSuitDiff > SUIT_DIFF_MAX) bestSuit = 'Unknown'
 
-		console.log(`🎴 ${bestRank}${bestSuit} (rank: ${bestRankDiff}, suit: ${bestSuitDiff})`)
+		console.log(
+			`🎴 ${bestRank}${bestSuit} (rank: ${bestRankDiff}, suit: ${bestSuitDiff})`,
+		)
 
-		return { rank: bestRank, suit: bestSuit, rankDiff: bestRankDiff, suitDiff: bestSuitDiff }
+		return {
+			rank: bestRank,
+			suit: bestSuit,
+			rankDiff: bestRankDiff,
+			suitDiff: bestSuitDiff,
+		}
 	}
 
 	// Main detection loop
@@ -432,7 +481,10 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 	useEffect(() => {
 		if (!isEnabled || !videoRef.current) return
 
-		if (!refImagesRef.current || Object.keys(refImagesRef.current).length === 0) {
+		if (
+			!refImagesRef.current ||
+			Object.keys(refImagesRef.current).length === 0
+		) {
 			return
 		}
 
@@ -445,7 +497,11 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 				}
 
 				const canvas = canvasRef.current
-				if (canvas?.getContext && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+				if (
+					canvas?.getContext &&
+					videoRef.current.readyState ===
+						videoRef.current.HAVE_ENOUGH_DATA
+				) {
 					const ctx = canvas.getContext('2d')
 					const w = videoRef.current.videoWidth
 					const h = videoRef.current.videoHeight
@@ -467,7 +523,11 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 					for (const contour of contours) {
 						try {
 							// Flatten (perspective transform)
-							const warp = flattened(canvas, contour.bbox, imageData)
+							const warp = flattened(
+								canvas,
+								contour.bbox,
+								imageData,
+							)
 
 							// Extract rank and suit
 							const rankImg = extractRank(warp)
@@ -491,11 +551,21 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 					}
 
 					// Play card if turn
-					if (cards.length > 0 && gameState?.currentPlayerIndex >= 0 && onCardDetected) {
+					if (
+						cards.length > 0 &&
+						gameState?.currentPlayerIndex >= 0 &&
+						onCardDetected
+					) {
 						const card = cards[0]
-						const player = gameState.players[gameState.currentPlayerIndex]
+						const player =
+							gameState.players[gameState.currentPlayerIndex]
 						if (player) {
-							const suitSymbol = { H: '♥', D: '♦', C: '♣', S: '♠' }[card.suit]
+							const suitSymbol = {
+								H: '♥',
+								D: '♦',
+								C: '♣',
+								S: '♠',
+							}[card.suit]
 							onCardDetected({
 								card: { value: card.rank, suit: suitSymbol },
 								playerIndex: gameState.currentPlayerIndex,
@@ -520,7 +590,8 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 		detect()
 
 		return () => {
-			if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
+			if (animationIdRef.current)
+				cancelAnimationFrame(animationIdRef.current)
 		}
 		//eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isEnabled, gameState, onCardDetected])
@@ -564,7 +635,9 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 						<label>Camera:</label>
 						<select
 							value={cameraSource}
-							onChange={(e) => !isEnabled && setCameraSource(e.target.value)}
+							onChange={(e) =>
+								!isEnabled && setCameraSource(e.target.value)
+							}
 							disabled={isEnabled}
 							className="camera-select"
 						>
@@ -597,7 +670,11 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 						{lastCard && (
 							<span className="card-badge">
 								Last: {lastCard.rank}
-								{({ H: '♥', D: '♦', C: '♣', S: '♠' }[lastCard.suit])}
+								{
+									{ H: '♥', D: '♦', C: '♣', S: '♠' }[
+										lastCard.suit
+									]
+								}
 							</span>
 						)}
 					</div>
@@ -606,9 +683,22 @@ export const CardDetection = ({ gameState, playerIndex, onCardDetected }) => {
 
 			{isEnabled && (
 				<>
-					<video ref={videoRef} style={{ display: 'none' }} width="1280" height="720" />
-					<canvas ref={canvasRef} className="card-detection-canvas" width="1280" height="720" />
-					<div className="detection-help-text">Dark background required. Position cards clearly in view.</div>
+					<video
+						ref={videoRef}
+						style={{ display: 'none' }}
+						width="1280"
+						height="720"
+					/>
+					<canvas
+						ref={canvasRef}
+						className="card-detection-canvas"
+						width="1280"
+						height="720"
+					/>
+					<div className="detection-help-text">
+						Dark background required. Position cards clearly in
+						view.
+					</div>
 				</>
 			)}
 		</div>
